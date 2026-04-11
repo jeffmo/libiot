@@ -4,12 +4,11 @@
 //!
 //! Part of the [`libiot`](https://github.com/jeffmo/libiot) workspace.
 //!
-//! This commit lands the pure codec layer — frame encoders, the
-//! `IncomingFrame` enum, and the incremental `parse_frames` parser —
-//! on top of the domain types from the previous commit. The generic
-//! transport layer and the public `AutomatePulseProHub` client land
-//! in subsequent commits, at which point the crate-level rustdoc is
-//! rewritten with real usage examples and a References section.
+//! This commit lands the generic async transport layer
+//! (`Transport<S>`) on top of the pure codec from the previous
+//! commit. The public `AutomatePulseProHub` client lands in the next
+//! commit, at which point the crate-level rustdoc is rewritten with
+//! real usage examples and a References section.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -23,6 +22,7 @@ mod motor_position;
 mod motor_type;
 mod motor_version;
 mod motor_voltage;
+mod transport;
 
 #[cfg(test)]
 mod tests;

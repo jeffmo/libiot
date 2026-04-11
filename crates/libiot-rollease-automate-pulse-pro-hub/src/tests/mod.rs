@@ -9,3 +9,4 @@ mod error_tests;
 mod motor_address_tests;
 mod motor_type_tests;
 mod motor_voltage_tests;
+mod transport_tests;
