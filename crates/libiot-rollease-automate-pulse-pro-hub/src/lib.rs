@@ -4,11 +4,35 @@
 //!
 //! Part of the [`libiot`](https://github.com/jeffmo/libiot) workspace.
 //!
-//! This crate is currently scaffolding. The domain types, pure codec
-//! layer, generic transport layer, and public client struct land in
-//! subsequent commits. The crate-level usage examples and References
-//! section will be added alongside the public client so that every
-//! example compiles against real API surface.
+//! This commit lands the crate's domain types — addresses, motor
+//! records, positions, versions, voltages, the aggregated hub
+//! snapshot, and the crate-local error type. The pure codec layer,
+//! generic transport layer, and public `AutomatePulseProHub` client
+//! land in subsequent commits, at which point the crate-level rustdoc
+//! is rewritten with real usage examples and a References section.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+
+mod error;
+mod hub_snapshot;
+mod motor;
+mod motor_address;
+mod motor_position;
+mod motor_type;
+mod motor_version;
+mod motor_voltage;
+
+#[cfg(test)]
+mod tests;
+
+pub use crate::error::Error;
+pub use crate::error::HubErrorCode;
+pub use crate::error::Result;
+pub use crate::hub_snapshot::HubSnapshot;
+pub use crate::motor::Motor;
+pub use crate::motor_address::MotorAddress;
+pub use crate::motor_position::MotorPosition;
+pub use crate::motor_type::MotorType;
+pub use crate::motor_version::MotorVersion;
+pub use crate::motor_voltage::MotorVoltage;
