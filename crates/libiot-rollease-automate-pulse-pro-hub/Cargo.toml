@@ -1,0 +1,29 @@
+[package]
+name        = "libiot-rollease-automate-pulse-pro-hub"
+version     = "0.1.0"
+description = "Async Rust client for the Rollease Acmeda Automate Pulse Pro shade hub LAN ASCII protocol"
+categories  = ["hardware-support", "network-programming"]
+keywords    = ["libiot", "iot", "home-automation", "rollease", "shades"]
+
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+publish.workspace      = true
+
+[features]
+default = []
+# Exposes destructive operations (pair motor, unpair, delete, factory reset,
+# set/delete limits). Opt-in because a typo here can wipe hub configuration.
+dangerous-ops = []
+
+[dependencies]
+thiserror = { workspace = true }
+tokio     = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }
+
+[lints]
+workspace = true

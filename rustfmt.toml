@@ -1,0 +1,26 @@
+# Formatting conventions for every crate in the libiot workspace.
+#
+# A few options below are unstable at the time of writing and require
+# `cargo +nightly fmt`. CI runs `cargo +nightly fmt --all -- --check`; local
+# contributors should install nightly rustfmt to match:
+#
+#     rustup component add rustfmt --toolchain nightly
+#     cargo +nightly fmt
+#
+# The stable rustfmt will still honor `max_width` and `edition` from this file
+# and will simply ignore the unstable options.
+
+max_width = 100
+edition   = "2024"
+
+# One symbol per `use` statement — never compound with `{}`.
+imports_granularity = "Item"
+
+# Sort `use` statements alphabetically.
+reorder_imports = true
+
+# Group std / external crates / crate-local with blank lines between groups.
+group_imports = "StdExternalCrate"
+
+# Match arms always end with a trailing comma, including block arms.
+match_block_trailing_comma = true
