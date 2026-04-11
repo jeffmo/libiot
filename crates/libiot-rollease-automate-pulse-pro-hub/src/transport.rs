@@ -7,12 +7,6 @@
 //! exercise every read/write path in-process — see
 //! `crate::tests::transport_tests` for the test suite.
 
-// `Transport<S>` has no non-test consumer at this commit — the public
-// `AutomatePulseProHub` client that wraps it lands in the next commit.
-// This module-level allow is removed in that commit, at which point
-// every method here has a real caller in the non-test build graph.
-#![allow(dead_code)]
-
 use std::time::Duration;
 use std::time::Instant;
 

@@ -6,18 +6,6 @@
 //! makes the entire codec testable with nothing but `#[test]`
 //! functions. See the `iot-crate-standards` skill §3 for the rationale.
 
-// The codec's `pub(crate)` items have no consumers outside the codec's
-// own unit tests at this commit — the generic transport layer and the
-// public client that wire them up land in the next two commits. Until
-// then, both the non-test `lib` build (which has `cfg(test)` disabled)
-// and clippy would flag every encoder, the `IncomingFrame` enum, and
-// every `mod.rs` re-export as dead. These module-level allows are
-// removed in the commit that lands the public `AutomatePulseProHub`
-// client, at which point every item here has a real caller in the
-// non-test build graph.
-#![allow(dead_code)]
-#![allow(unused_imports)]
-
 mod encoder;
 mod incoming_frame;
 mod parser;
