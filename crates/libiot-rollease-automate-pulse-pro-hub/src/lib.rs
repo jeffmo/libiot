@@ -4,16 +4,17 @@
 //!
 //! Part of the [`libiot`](https://github.com/jeffmo/libiot) workspace.
 //!
-//! This commit lands the crate's domain types — addresses, motor
-//! records, positions, versions, voltages, the aggregated hub
-//! snapshot, and the crate-local error type. The pure codec layer,
-//! generic transport layer, and public `AutomatePulseProHub` client
-//! land in subsequent commits, at which point the crate-level rustdoc
-//! is rewritten with real usage examples and a References section.
+//! This commit lands the pure codec layer — frame encoders, the
+//! `IncomingFrame` enum, and the incremental `parse_frames` parser —
+//! on top of the domain types from the previous commit. The generic
+//! transport layer and the public `AutomatePulseProHub` client land
+//! in subsequent commits, at which point the crate-level rustdoc is
+//! rewritten with real usage examples and a References section.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod codec;
 mod error;
 mod hub_snapshot;
 mod motor;

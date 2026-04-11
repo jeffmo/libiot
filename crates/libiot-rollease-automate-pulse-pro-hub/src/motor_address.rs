@@ -112,16 +112,6 @@ impl MotorAddress {
     /// Return the raw 3-byte representation. Intended for use by the codec
     /// layer when serializing frames; downstream users should prefer
     /// [`MotorAddress::as_str`].
-    //
-    // This method is intentionally unused at this point in the stack — the
-    // codec layer that consumes it lands in a later commit. `#[expect]` is
-    // used instead of `#[allow]` so that once the codec lands and the
-    // method becomes used, the compiler emits a warning reminding us to
-    // remove this attribute.
-    #[expect(
-        dead_code,
-        reason = "consumed by the codec encoder that lands in a later commit"
-    )]
     pub(crate) fn as_bytes(&self) -> &[u8; 3] {
         &self.0
     }
