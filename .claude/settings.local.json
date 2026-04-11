@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo doc:*)",
+      "Bash(sl status:*)",
+      "Bash(sl diff:*)",
+      "Bash(sl show:*)",
+      "Bash(sl log:*)",
+      "Bash(sl mv:*)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "Bash(sl add:*)",
+      "Bash(sl commit:*)",
+      "Bash(./scripts/check-libiot-keywords.sh)"
+    ]
+  }
+}
