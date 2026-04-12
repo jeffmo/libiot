@@ -115,10 +115,6 @@ pub(crate) enum CliError {
         source: std::io::Error,
     },
 
-    /// `list` found no `libiot-*` binaries on `$PATH`.
-    #[error("no libiot-* CLIs found on PATH")]
-    NoCLIsFound,
-
     /// Could not determine the user's home directory.
     #[error("could not determine home directory")]
     NoHomeDir,
@@ -197,14 +193,13 @@ impl CliError {
             Self::EnvVarNotFound { .. } => 19,
             Self::EnvVarTargetNotFound { .. } => 20,
             Self::ExecFailed { .. } => 21,
-            Self::NoCLIsFound => 22,
-            Self::NoHomeDir => 23,
-            Self::PostInstallAliasFailed { .. } => 24,
-            Self::SettingsDirError { .. } => 25,
-            Self::SettingsParseError { .. } => 26,
-            Self::SettingsPermissionError { .. } => 27,
-            Self::SettingsReadError { .. } => 28,
-            Self::SettingsWriteError { .. } => 29,
+            Self::NoHomeDir => 22,
+            Self::PostInstallAliasFailed { .. } => 23,
+            Self::SettingsDirError { .. } => 24,
+            Self::SettingsParseError { .. } => 25,
+            Self::SettingsPermissionError { .. } => 26,
+            Self::SettingsReadError { .. } => 27,
+            Self::SettingsWriteError { .. } => 28,
         }
     }
 
@@ -226,8 +221,6 @@ impl CliError {
             Self::EnvVarLibiotPrefix { .. }
             | Self::EnvVarNotFound { .. }
             | Self::EnvVarTargetNotFound { .. } => "env-var",
-
-            Self::NoCLIsFound => "discovery",
 
             Self::NoHomeDir
             | Self::PostInstallAliasFailed { .. }

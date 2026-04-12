@@ -7,7 +7,7 @@ use crate::error::CliError;
 
 /// The total number of `CliError` variants. Keep in sync when adding
 /// new variants.
-const VARIANT_COUNT: usize = 20;
+const VARIANT_COUNT: usize = 19;
 
 /// Helper: construct one instance of every `CliError` variant using
 /// dummy values.
@@ -53,7 +53,6 @@ fn all_variants() -> Vec<CliError> {
             name: String::new(),
             source: std::io::Error::other("test"),
         },
-        CliError::NoCLIsFound,
         CliError::NoHomeDir,
         CliError::PostInstallAliasFailed {
             reason: String::new(),
@@ -140,16 +139,9 @@ fn every_variant_has_a_non_empty_kind() {
 /// Written by Claude Code, reviewed by a human.
 #[test]
 fn kind_values_are_from_expected_set() {
-    let expected: HashSet<&str> = [
-        "alias",
-        "cargo",
-        "delegation",
-        "discovery",
-        "env-var",
-        "settings",
-    ]
-    .into_iter()
-    .collect();
+    let expected: HashSet<&str> = ["alias", "cargo", "delegation", "env-var", "settings"]
+        .into_iter()
+        .collect();
 
     for variant in all_variants() {
         let kind = variant.kind();
