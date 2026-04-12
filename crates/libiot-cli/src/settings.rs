@@ -44,22 +44,29 @@ pub(crate) struct Settings {
 // Path helpers
 // ---------------------------------------------------------------------------
 
-/// Return the canonical settings file path.
+/// Return the libiot configuration directory.
 ///
 /// Checks `LIBIOT_CONFIG_DIR` first; falls back to
-/// `$HOME/.config/libiot/settings.json`.
-pub(crate) fn settings_path() -> CliResult<PathBuf> {
-    let dir = match std::env::var("LIBIOT_CONFIG_DIR") {
-        Ok(d) if !d.is_empty() => PathBuf::from(d),
+/// `$HOME/.config/libiot`.
+pub(crate) fn config_dir() -> CliResult<PathBuf> {
+    match std::env::var("LIBIOT_CONFIG_DIR") {
+        Ok(d) if !d.is_empty() => Ok(PathBuf::from(d)),
         _ => {
             let home = std::env::var("HOME").map_err(|_| CliError::NoHomeDir)?;
             if home.is_empty() {
                 return Err(CliError::NoHomeDir);
             }
-            PathBuf::from(home).join(".config").join("libiot")
+            Ok(PathBuf::from(home).join(".config").join("libiot"))
         },
-    };
-    Ok(dir.join("settings.json"))
+    }
+}
+
+/// Return the canonical settings file path.
+///
+/// Checks `LIBIOT_CONFIG_DIR` first; falls back to
+/// `$HOME/.config/libiot/settings.json`.
+pub(crate) fn settings_path() -> CliResult<PathBuf> {
+    Ok(config_dir()?.join("settings.json"))
 }
 
 // ---------------------------------------------------------------------------
