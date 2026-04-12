@@ -6,8 +6,10 @@
 //! (`main.rs`), not here.
 
 mod get;
+mod install;
 mod list;
 mod set;
+mod uninstall;
 mod unset;
 
 #[cfg(test)]
@@ -29,8 +31,8 @@ pub(crate) fn run(cli: Cli) -> CliResult<()> {
         Command::Unset { target } => unset::run_unset(target, ctx),
         Command::Get { target } => get::run_get(target, ctx),
         Command::List { target } => list::run_list(target, ctx),
-        Command::Install(_) => todo!("install not yet implemented"),
-        Command::Uninstall(_) => todo!("uninstall not yet implemented"),
+        Command::Install(ref args) => install::run_install(args, ctx),
+        Command::Uninstall(ref args) => uninstall::run_uninstall(args, ctx),
         Command::Completions { .. } => todo!("completions not yet implemented"),
         Command::ConfigPath => {
             let path = crate::settings::settings_path()?;
