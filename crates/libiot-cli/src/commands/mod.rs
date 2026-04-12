@@ -5,6 +5,7 @@
 //! `libiot-*-cli` binaries is handled in the top-level dispatcher
 //! (`main.rs`), not here.
 
+mod completions;
 mod get;
 mod install;
 mod list;
@@ -33,7 +34,10 @@ pub(crate) fn run(cli: Cli) -> CliResult<()> {
         Command::List { target } => list::run_list(target, ctx),
         Command::Install(ref args) => install::run_install(args, ctx),
         Command::Uninstall(ref args) => uninstall::run_uninstall(args, ctx),
-        Command::Completions { .. } => todo!("completions not yet implemented"),
+        Command::Completions { shell } => {
+            completions::run_completions(shell);
+            Ok(())
+        },
         Command::ConfigPath => {
             let path = crate::settings::settings_path()?;
             crate::output::render_config_path(&path, ctx);
