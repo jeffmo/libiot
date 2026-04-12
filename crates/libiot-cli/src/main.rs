@@ -9,6 +9,7 @@
 //! wrappers.
 
 mod error;
+mod output;
 
 #[cfg(test)]
 mod tests;
