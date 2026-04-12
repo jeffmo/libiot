@@ -2,8 +2,8 @@
 name        = "libiot-rollease-automate-pulse-pro-hub"
 version     = "0.1.0"
 description = "Async Rust client for the Rollease Acmeda Automate Pulse Pro shade hub LAN ASCII protocol"
-categories  = ["hardware-support", "network-programming", "home-automation"]
-keywords    = ["libiot", "iot", "rollease", "shades" "pulsepro"]
+categories  = ["api-bindings", "hardware-support", "network-programming"]
+keywords    = ["libiot", "iot", "rollease", "shades", "pulsepro"]
 
 edition.workspace      = true
 rust-version.workspace = true
