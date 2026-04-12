@@ -104,7 +104,7 @@ impl<'a> From<&'a Motor> for MotorView<'a> {
 pub(crate) struct MotorPositionView {
     pub closed_percent: u8,
     pub tilt_percent: u16,
-    pub signal: u8,
+    pub signal: SignalView,
 }
 
 impl From<MotorPosition> for MotorPositionView {
@@ -112,7 +112,32 @@ impl From<MotorPosition> for MotorPositionView {
         Self {
             closed_percent: p.closed_percent,
             tilt_percent: p.tilt_percent,
-            signal: p.signal,
+            signal: SignalView::from_raw(p.signal),
+        }
+    }
+}
+
+/// JSON view of the undocumented RF signal-strength byte.
+///
+/// The raw byte is an unsigned 0–255 value representing 433 MHz ARC
+/// radio link quality between the hub and the motor. The exact units
+/// are not documented by Rollease. Empirically observed: 88 (0x58) on
+/// a close/strong motor, 76 (0x4C) on a more distant one, 64 (0x40)
+/// described as marginal. Higher = better.
+#[derive(serde::Serialize)]
+pub(crate) struct SignalView {
+    /// Raw byte value as reported by the hub (0–255).
+    pub raw: u8,
+    /// Qualitative assessment based on empirical thresholds.
+    pub quality: &'static str,
+}
+
+impl SignalView {
+    /// Build a [`SignalView`] from the raw signal byte.
+    pub(crate) fn from_raw(raw: u8) -> Self {
+        Self {
+            raw,
+            quality: signal_quality(raw),
         }
     }
 }
@@ -140,7 +165,7 @@ impl<'a> From<&'a MotorVersion> for MotorVersionView<'a> {
 pub(crate) struct MotorVoltageView {
     pub centivolts: u32,
     pub volts: f32,
-    pub signal: u8,
+    pub signal: SignalView,
 }
 
 impl From<MotorVoltage> for MotorVoltageView {
@@ -148,7 +173,7 @@ impl From<MotorVoltage> for MotorVoltageView {
         Self {
             centivolts: v.centivolts,
             volts: v.volts(),
-            signal: v.signal,
+            signal: SignalView::from_raw(v.signal),
         }
     }
 }
@@ -200,8 +225,11 @@ pub(crate) fn render_hub_info(info: &HubInfo, format: OutputFormat) {
                 let name = motor.name.as_deref().unwrap_or("?");
                 let state = match motor.position {
                     Some(p) => format!(
-                        "closed={}%  tilt={}  signal=0x{:02X}",
-                        p.closed_percent, p.tilt_percent, p.signal,
+                        "closed={}%  tilt={}  signal={} ({})",
+                        p.closed_percent,
+                        p.tilt_percent,
+                        p.signal,
+                        signal_quality(p.signal),
                     ),
                     None => "(no position received)".to_owned(),
                 };
@@ -224,7 +252,7 @@ pub(crate) fn render_motor_position(pos: MotorPosition, format: OutputFormat) {
         OutputFormat::Human => {
             println!("closed: {}%", pos.closed_percent);
             println!("tilt:   {}%", pos.tilt_percent);
-            println!("signal: 0x{:02X}", pos.signal);
+            println!("signal: {} ({})", pos.signal, signal_quality(pos.signal));
         },
     }
 }
@@ -262,7 +290,7 @@ pub(crate) fn render_motor_voltage(volt: MotorVoltage, format: OutputFormat) {
                 volt.volts(),
                 volt.centivolts
             );
-            println!("signal:  0x{:02X}", volt.signal);
+            println!("signal:  {} ({})", volt.signal, signal_quality(volt.signal));
         },
     }
 }
@@ -288,6 +316,22 @@ pub(crate) fn render_ok(format: OutputFormat) {
     match format {
         OutputFormat::Json => println!("{{\"ok\":true}}"),
         OutputFormat::Human => {}, // silence — the command succeeded, nothing to say
+    }
+}
+
+/// Qualitative assessment of the undocumented RF signal-strength byte.
+///
+/// The thresholds are empirical, based on real-hub observations documented
+/// in `PULSE_PRO_LOCAL_API.md` §5.2: `0x58` (88) observed as strong on a
+/// close motor, `0x4C` (76) as weaker on a distant one, `0x40` (64)
+/// described as marginal. The exact scale is not documented by Rollease,
+/// so these labels are best-effort guidance, not precise engineering data.
+fn signal_quality(signal: u8) -> &'static str {
+    match signal {
+        80..=u8::MAX => "great",
+        60..=79 => "ok",
+        40..=59 => "weak",
+        0..=39 => "poor",
     }
 }
 
