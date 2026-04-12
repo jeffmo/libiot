@@ -4,6 +4,7 @@ use std::process::Command;
 
 use crate::cli::BUILTIN_NAMES;
 use crate::cli::InstallArgs;
+use crate::cli::normalize_crate_name;
 use crate::error::CliError;
 use crate::error::CliResult;
 use crate::output::CargoResultView;
@@ -73,7 +74,8 @@ pub(crate) fn build_cargo_install_args(
 /// Wraps `cargo install` with automatic crate-name prefixing and
 /// optional post-install alias creation.
 pub(crate) fn run_install(args: &InstallArgs, ctx: OutputContext) -> CliResult<()> {
-    let crate_name = format!("libiot-{}-cli", args.name);
+    let short_name = normalize_crate_name(&args.name);
+    let crate_name = format!("libiot-{short_name}-cli");
     let cargo_args = build_cargo_install_args(&crate_name, args, ctx.quiet);
 
     // -- dry run ---------------------------------------------------------
@@ -85,7 +87,7 @@ pub(crate) fn run_install(args: &InstallArgs, ctx: OutputContext) -> CliResult<(
 
     // -- spawn cargo install ---------------------------------------------
     let alias_requested = args.alias.as_deref();
-    let name_for_alias = &args.name;
+    let name_for_alias = short_name;
 
     match ctx.format {
         OutputFormat::Human => {

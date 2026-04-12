@@ -34,6 +34,27 @@ pub(crate) fn is_builtin(name: &str) -> bool {
     BUILTIN_NAMES.contains(&name)
 }
 
+/// Normalize a user-supplied crate name to the short form used
+/// internally (e.g. `"rollease-automate-pulse-pro-hub"`).
+///
+/// Accepts any of:
+/// - `"rollease-automate-pulse-pro-hub"` (short form, returned as-is)
+/// - `"libiot-rollease-automate-pulse-pro-hub"` (library crate name)
+/// - `"libiot-rollease-automate-pulse-pro-hub-cli"` (CLI crate name)
+pub(crate) fn normalize_crate_name(name: &str) -> &str {
+    if let Some(without_prefix) = name.strip_prefix("libiot-") {
+        // Had the libiot- prefix — also strip -cli if present.
+        without_prefix
+            .strip_suffix("-cli")
+            .unwrap_or(without_prefix)
+    } else {
+        // No libiot- prefix — return as-is. We intentionally do NOT
+        // strip a bare -cli suffix (e.g. "foo-cli") because that form
+        // is ambiguous without the libiot- prefix.
+        name
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Top-level CLI
 // ---------------------------------------------------------------------------

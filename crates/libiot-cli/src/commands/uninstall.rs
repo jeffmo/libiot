@@ -4,6 +4,7 @@
 use std::process::Command;
 
 use crate::cli::UninstallArgs;
+use crate::cli::normalize_crate_name;
 use crate::error::CliError;
 use crate::error::CliResult;
 use crate::output::CargoResultView;
@@ -48,7 +49,8 @@ pub(crate) fn build_cargo_uninstall_args(
 /// Wraps `cargo uninstall` with automatic crate-name prefixing and
 /// optional cleanup of aliases and environment variables.
 pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResult<()> {
-    let crate_name = format!("libiot-{}-cli", args.name);
+    let short_name = normalize_crate_name(&args.name);
+    let crate_name = format!("libiot-{short_name}-cli");
     let cargo_args = build_cargo_uninstall_args(&crate_name, args, ctx.quiet);
 
     // -- spawn cargo uninstall -------------------------------------------
@@ -113,7 +115,7 @@ pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResu
         let mut settings = load_settings()?;
         cleanup_after_uninstall(
             &mut settings,
-            &args.name,
+            short_name,
             args.remove_aliases,
             args.remove_env_vars,
         );
