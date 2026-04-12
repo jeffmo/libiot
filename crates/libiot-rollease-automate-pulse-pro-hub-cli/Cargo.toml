@@ -1,0 +1,48 @@
+[package]
+name        = "libiot-rollease-automate-pulse-pro-hub-cli"
+version     = "0.1.0"
+description = "Command-line interface for the Rollease Acmeda Automate Pulse Pro shade hub"
+categories  = ["command-line-utilities", "hardware-support", "network-programming", "home-automation"]
+keywords    = ["libiot", "iot", "home-automation", "rollease", "shades", "hub", "pulsepro", "cli"]
+
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+authors.workspace      = true
+repository.workspace   = true
+publish.workspace      = true
+
+[[bin]]
+name = "libiot-rollease-automate-pulse-pro-hub"
+path = "src/main.rs"
+# `doc = false` prevents a rustdoc output-filename collision with the
+# library crate of the same name. The CLI's user docs live in --help
+# text and the README, not in rustdoc.
+doc = false
+
+[features]
+default = []
+# Exposes destructive protocol operations (pair, unpair, delete, factory
+# reset, set/delete limits) as the `dangerous` subcommand group. The
+# feature forwards to the library crate's `dangerous-ops` feature so both
+# halves are enabled with a single `--features dangerous-ops` at install
+# time.
+dangerous-ops = ["libiot-rollease-automate-pulse-pro-hub/dangerous-ops"]
+
+[dependencies]
+libiot-rollease-automate-pulse-pro-hub = { path = "../libiot-rollease-automate-pulse-pro-hub" }
+clap          = { workspace = true }
+clap_complete = { workspace = true }
+clap_mangen   = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+thiserror     = { workspace = true }
+tokio         = { workspace = true, features = ["rt", "macros"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tokio      = { workspace = true, features = ["full", "test-util"] }
+
+[lints]
+workspace = true
