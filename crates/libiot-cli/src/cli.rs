@@ -50,7 +50,7 @@ pub(crate) fn is_builtin(name: &str) -> bool {
     version,
     about = "Unified CLI dispatcher for the libiot ecosystem",
     subcommand_required = true,
-    arg_required_else_help = true,
+    arg_required_else_help = true
 )]
 pub(crate) struct Cli {
     /// Output format: "human" (default) for readable text, "json" for

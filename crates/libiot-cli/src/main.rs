@@ -22,10 +22,10 @@ use std::ffi::OsString;
 
 use clap::Parser;
 
-use crate::cli::is_builtin;
 use crate::cli::Cli;
-use crate::output::report_error;
+use crate::cli::is_builtin;
 use crate::output::OutputContext;
+use crate::output::report_error;
 
 /// Entry point.
 ///

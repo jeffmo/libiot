@@ -5,9 +5,37 @@
 //! `libiot-*-cli` binaries is handled in the top-level dispatcher
 //! (`main.rs`), not here.
 
+mod get;
+mod list;
+mod set;
+mod unset;
+
+#[cfg(test)]
+mod tests;
+
+use crate::cli::Cli;
+use crate::cli::Command;
+use crate::error::CliResult;
+use crate::output::OutputContext;
+
 /// Execute the built-in command described by `cli`.
-#[allow(clippy::needless_pass_by_value)] // will consume fields once handlers land
-pub(crate) fn run(cli: crate::cli::Cli) -> crate::error::CliResult<()> {
-    let _ = cli;
-    todo!("command dispatch not yet implemented")
+pub(crate) fn run(cli: Cli) -> CliResult<()> {
+    let ctx = OutputContext {
+        format: cli.format,
+        quiet: cli.quiet,
+    };
+    match cli.command {
+        Command::Set { target } => set::run_set(target, ctx),
+        Command::Unset { target } => unset::run_unset(target, ctx),
+        Command::Get { target } => get::run_get(target, ctx),
+        Command::List { target } => list::run_list(target, ctx),
+        Command::Install(_) => todo!("install not yet implemented"),
+        Command::Uninstall(_) => todo!("uninstall not yet implemented"),
+        Command::Completions { .. } => todo!("completions not yet implemented"),
+        Command::ConfigPath => {
+            let path = crate::settings::settings_path()?;
+            crate::output::render_config_path(&path, ctx);
+            Ok(())
+        },
+    }
 }

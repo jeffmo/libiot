@@ -1,8 +1,8 @@
 //! Tests for [`crate::cli`] — built-in name detection and the
 //! `BUILTIN_NAMES` constant.
 
-use crate::cli::is_builtin;
 use crate::cli::BUILTIN_NAMES;
+use crate::cli::is_builtin;
 
 /// `is_builtin("set")` returns true because `set` is a built-in
 /// subcommand for alias/env-var management.
