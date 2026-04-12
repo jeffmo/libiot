@@ -8,7 +8,6 @@ rust-version = "1.85"
 license      = "MIT"
 authors      = ["Jeff Morrison <lbljeffmo@gmail.com>"]
 repository   = "https://github.com/jeffmo/libiot"
-publish      = false
 
 [workspace.dependencies]
 # Pinned once here, consumed by each member via `workspace = true`.
