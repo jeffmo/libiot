@@ -116,10 +116,7 @@ pub(crate) fn save_settings(settings: &Settings) -> CliResult<()> {
 /// Same semantics as [`save_settings`] but writes to the given path
 /// instead of the canonical location. Used by tests to avoid mutating
 /// process-global environment variables.
-pub(crate) fn save_settings_to(
-    settings: &Settings,
-    path: &Path,
-) -> CliResult<()> {
+pub(crate) fn save_settings_to(settings: &Settings, path: &Path) -> CliResult<()> {
     // -- ensure directory exists ------------------------------------------
     let dir = path
         .parent()
@@ -127,9 +124,7 @@ pub(crate) fn save_settings_to(
         // `parent()` will not be `None`.  Guard defensively anyway.
         .ok_or_else(|| CliError::SettingsDirError {
             path: path.display().to_string(),
-            source: std::io::Error::other(
-                "settings path has no parent directory",
-            ),
+            source: std::io::Error::other("settings path has no parent directory"),
         })?;
 
     fs::create_dir_all(dir).map_err(|e| CliError::SettingsDirError {

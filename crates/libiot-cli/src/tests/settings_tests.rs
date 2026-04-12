@@ -117,10 +117,7 @@ fn resolve_env_vars_alias_merges_and_overrides() {
     let resolved = resolve_env_vars(&settings, "shades");
 
     // alias overrides command for HUB_IP
-    assert_eq!(
-        resolved.get("LIBIOT_HUB_IP").unwrap(),
-        "192.168.1.99",
-    );
+    assert_eq!(resolved.get("LIBIOT_HUB_IP").unwrap(), "192.168.1.99",);
     // command-only var is still present
     assert_eq!(resolved.get("LIBIOT_TIMEOUT").unwrap(), "30");
     // alias-only var is present
@@ -207,18 +204,10 @@ fn save_and_load_round_trip_via_tempdir() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let dir_mode = std::fs::metadata(tmp.path())
-            .unwrap()
-            .permissions()
-            .mode()
-            & 0o777;
+        let dir_mode = std::fs::metadata(tmp.path()).unwrap().permissions().mode() & 0o777;
         assert_eq!(dir_mode, 0o700, "directory permissions should be 0700");
 
-        let file_mode = std::fs::metadata(&file_path)
-            .unwrap()
-            .permissions()
-            .mode()
-            & 0o777;
+        let file_mode = std::fs::metadata(&file_path).unwrap().permissions().mode() & 0o777;
         assert_eq!(file_mode, 0o600, "file permissions should be 0600");
     }
 }
