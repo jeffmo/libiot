@@ -19,6 +19,7 @@ fn default_args(name: &str) -> UninstallArgs {
         remove_env_vars: false,
         root: None,
         verbose: false,
+        no_update_completions: true,
     }
 }
 
@@ -88,6 +89,7 @@ fn build_args_all_flags() {
         remove_env_vars: false,
         root: Some("/usr/local".to_owned()),
         verbose: true,
+        no_update_completions: true,
     };
     let result = build_cargo_uninstall_args("libiot-test-cli", &args, false);
     assert_eq!(

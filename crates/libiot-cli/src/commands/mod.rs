@@ -5,7 +5,7 @@
 //! `libiot-*-cli` binaries is handled in the top-level dispatcher
 //! (`main.rs`), not here.
 
-mod completions;
+pub(crate) mod completions;
 mod get;
 mod install;
 mod list;

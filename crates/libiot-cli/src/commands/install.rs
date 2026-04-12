@@ -160,6 +160,11 @@ pub(crate) fn run_install(args: &InstallArgs, ctx: OutputContext) -> CliResult<(
         render_cargo_result(&view, ctx);
     }
 
+    // -- regenerate completions ---------------------------------------------
+    if !args.no_update_completions {
+        crate::commands::completions::regenerate_existing_completions(args.verbose);
+    }
+
     Ok(())
 }
 

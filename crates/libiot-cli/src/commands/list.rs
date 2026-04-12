@@ -25,6 +25,10 @@ pub(crate) fn run_list(target: Option<ListTarget>, ctx: OutputContext) -> CliRes
 }
 
 /// List all discovered CLIs and configured aliases.
+///
+/// Also triggers a background regeneration of completion files (if
+/// any exist on disk) so that tab-completion stays in sync with
+/// the current set of installed CLIs and aliases.
 fn list_all(ctx: OutputContext) -> CliResult<()> {
     let discovered = discover_clis();
     let settings = load_settings()?;
@@ -47,6 +51,10 @@ fn list_all(ctx: OutputContext) -> CliResult<()> {
         .collect();
 
     crate::output::render_list_all(&cli_views, &alias_views, ctx);
+
+    // Opportunistically regenerate completions in the background.
+    crate::commands::completions::regenerate_existing_completions(/* verbose = */ false);
+
     Ok(())
 }
 

@@ -279,6 +279,9 @@ pub(crate) struct InstallArgs {
     /// Directory to install packages into.
     #[arg(long)]
     pub root: Option<String>,
+    /// Skip regenerating shell completion files after install.
+    #[arg(long)]
+    pub no_update_completions: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -309,4 +312,7 @@ pub(crate) struct UninstallArgs {
     /// Use verbose output.
     #[arg(long, short)]
     pub verbose: bool,
+    /// Skip regenerating shell completion files after uninstall.
+    #[arg(long)]
+    pub no_update_completions: bool,
 }

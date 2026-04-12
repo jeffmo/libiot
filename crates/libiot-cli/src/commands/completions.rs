@@ -209,6 +209,141 @@ fn print_install_instructions() {
 // Completion generation core
 // ---------------------------------------------------------------------------
 
+/// Map a filename back to a [`clap_complete::Shell`].
+///
+/// Returns `None` if the filename doesn't match any known shell.
+fn shell_from_filename(name: &str) -> Option<clap_complete::Shell> {
+    use clap_complete::Shell;
+    match name {
+        "bash" => Some(Shell::Bash),
+        "zsh" => Some(Shell::Zsh),
+        "fish" => Some(Shell::Fish),
+        "powershell" => Some(Shell::PowerShell),
+        "elvish" => Some(Shell::Elvish),
+        _ => None,
+    }
+}
+
+/// Regenerate all completion files that already exist on disk.
+///
+/// Scans the completions directory for files matching known shell
+/// names and regenerates each one. In verbose mode, prints progress
+/// to stderr. Errors are printed to stderr but never cause a non-zero
+/// exit.
+fn regenerate_existing_completions_sync(verbose: bool) {
+    let comp_dir = match config_dir() {
+        Ok(d) => d.join("completions"),
+        Err(e) => {
+            if verbose {
+                eprintln!("completions: could not resolve config dir: {e}");
+            }
+            return;
+        },
+    };
+
+    if !comp_dir.is_dir() {
+        if verbose {
+            eprintln!(
+                "completions: no completions directory at {}, skipping",
+                comp_dir.display()
+            );
+        }
+        return;
+    }
+
+    let entries = match fs::read_dir(&comp_dir) {
+        Ok(e) => e,
+        Err(e) => {
+            if verbose {
+                eprintln!("completions: could not read {}: {e}", comp_dir.display());
+            }
+            return;
+        },
+    };
+
+    for entry in entries {
+        let Ok(entry) = entry else { continue };
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        let Some(shell) = shell_from_filename(&name_str) else {
+            continue;
+        };
+
+        if verbose {
+            eprintln!("completions: regenerating {name_str} completions...");
+        }
+
+        let script = generate_completions(shell);
+        let file_path = comp_dir.join(&*name_str);
+        if let Err(e) = fs::write(&file_path, script.as_bytes()) {
+            if verbose {
+                eprintln!("completions: failed to write {}: {e}", file_path.display());
+            }
+        } else if verbose {
+            eprintln!("completions: wrote {}", file_path.display());
+        }
+    }
+}
+
+/// Regenerate existing completion files after install/uninstall.
+///
+/// - In **verbose** mode: runs in-process with progress output to
+///   stderr. Errors are printed but do not affect the exit code.
+/// - In **non-verbose** mode: forks a detached background process so
+///   the file writes cannot block the main process from exiting.
+///   Errors are silently swallowed.
+pub(crate) fn regenerate_existing_completions(verbose: bool) {
+    if verbose {
+        regenerate_existing_completions_sync(/* verbose = */ true);
+    } else {
+        spawn_background_regeneration();
+    }
+}
+
+/// Fork a detached child process that regenerates completions.
+///
+/// The child inherits `LIBIOT_CONFIG_DIR` (if set) so it writes to the
+/// same location. Stdout and stderr are silenced. The parent does not
+/// wait for the child.
+fn spawn_background_regeneration() {
+    // Get the path to our own binary so the child runs the same
+    // executable.
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+
+    // We can't directly call our own internal function in a fork
+    // (Rust doesn't support fork safely with its runtime). Instead,
+    // spawn ourselves as a child with a hidden subcommand-like
+    // approach. But we don't have a hidden subcommand for this.
+    //
+    // Simpler approach: use std::process::Command to run a short
+    // inline script. But we want to avoid shell injection.
+    //
+    // Simplest safe approach: invoke `libiot completions <SHELL>`
+    // for each shell file that exists. But that would also print
+    // the snippet output.
+    //
+    // Best approach: spawn a child that runs our binary with a
+    // hidden environment variable signaling "regenerate mode".
+    let _ = std::process::Command::new(exe)
+        .env("_LIBIOT_REGEN_COMPLETIONS", "1")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    // Parent does not wait. Child is detached.
+}
+
+/// Entry point for the background regeneration child process.
+///
+/// Called from `main()` when `_LIBIOT_REGEN_COMPLETIONS=1` is set.
+/// Regenerates all existing completion files, then exits.
+pub(crate) fn run_background_regeneration() -> ! {
+    regenerate_existing_completions_sync(/* verbose = */ false);
+    std::process::exit(0)
+}
+
 /// Generate shell completions and return the output as a [`String`].
 ///
 /// This is the testable core; it writes into an in-memory buffer

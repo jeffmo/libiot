@@ -38,6 +38,12 @@ use crate::output::report_error;
 /// 2. **Delegation mode** — `argv[1]` is anything else. `argv[1..]`
 ///    is passed verbatim to the delegation module for exec handoff.
 fn main() {
+    // Hidden entry point for background completion regeneration.
+    // Spawned by install/uninstall/list as a detached child.
+    if std::env::var("_LIBIOT_REGEN_COMPLETIONS").as_deref() == Ok("1") {
+        commands::completions::run_background_regeneration();
+    }
+
     let raw_args: Vec<OsString> = std::env::args_os().collect();
 
     // No args at all — let clap show help and exit.

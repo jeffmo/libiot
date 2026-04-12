@@ -27,6 +27,7 @@ fn default_args(name: &str) -> InstallArgs {
         jobs: None,
         quiet: false,
         root: None,
+        no_update_completions: true,
     }
 }
 
@@ -73,6 +74,7 @@ fn build_args_all_flags() {
         jobs: Some(4),
         quiet: true,
         root: Some("/usr/local".to_owned()),
+        no_update_completions: true,
     };
     let result = build_cargo_install_args("libiot-test-cli", &args, false);
     assert_eq!(

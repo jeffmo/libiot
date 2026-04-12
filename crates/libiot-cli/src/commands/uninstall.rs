@@ -132,6 +132,11 @@ pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResu
         render_cargo_result(&view, ctx);
     }
 
+    // -- regenerate completions ---------------------------------------------
+    if !args.no_update_completions {
+        crate::commands::completions::regenerate_existing_completions(args.verbose);
+    }
+
     Ok(())
 }
 
