@@ -8,6 +8,11 @@
 //! environment variable injection, and `cargo install`/`uninstall`
 //! wrappers.
 
+mod error;
+
+#[cfg(test)]
+mod tests;
+
 fn main() {
     todo!("pre-parse dispatch not yet implemented")
 }
