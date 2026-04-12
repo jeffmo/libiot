@@ -85,7 +85,7 @@ async fn hub_info_renders_hub_name_from_real_captured_response() {
     let _ = fake_hub.await;
 }
 
-/// Verifies that `--output json hub info` produces valid JSON with the
+/// Verifies that `--format json hub info` produces valid JSON with the
 /// expected top-level fields.
 ///
 /// Written by Claude Code, reviewed by a human.
@@ -125,7 +125,7 @@ async fn hub_info_json_output_has_expected_fields() {
     let output = tokio::task::spawn_blocking(move || {
         assert_cmd::Command::cargo_bin("libiot-rollease-automate-pulse-pro-hub")
             .unwrap()
-            .args(["--hub", &addr_for_cmd, "--output", "json", "hub", "info"])
+            .args(["--hub", &addr_for_cmd, "--format", "json", "hub", "info"])
             .output()
             .expect("failed to exec CLI binary")
     })

@@ -42,7 +42,7 @@ use crate::error::CliError;
 /// to exit codes.
 fn main() {
     let cli = Cli::parse();
-    let output_format = cli.output;
+    let output_format = cli.format;
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()

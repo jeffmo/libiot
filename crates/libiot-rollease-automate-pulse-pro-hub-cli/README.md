@@ -45,7 +45,7 @@ libiot-rollease-automate-pulse-pro-hub motor 3YC position
 libiot-rollease-automate-pulse-pro-hub set-position "dining room" 50
 
 # Get JSON output for scripting
-libiot-rollease-automate-pulse-pro-hub --output json hub info
+libiot-rollease-automate-pulse-pro-hub --format json hub info
 ```
 
 ## Hub address
@@ -141,7 +141,7 @@ state.
 ## Output format
 
 - Default: human-readable aligned text.
-- `--output json`: machine-readable JSON on stdout.
+- `--format json`: machine-readable JSON on stdout.
 
 Errors always go to stderr. Exit codes: `0` = success, `1` = runtime
 error, `2` = usage error (bad arguments).

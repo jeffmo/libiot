@@ -30,7 +30,7 @@ pub(crate) struct Cli {
     /// Output format: "human" (default) for aligned text, "json" for
     /// machine-readable JSON.
     #[arg(long, default_value = "human", global = true)]
-    pub output: OutputFormat,
+    pub format: OutputFormat,
 
     /// The subcommand to execute.
     #[command(subcommand)]
@@ -159,6 +159,18 @@ pub(crate) enum Command {
 pub(crate) enum HubQuery {
     /// Full hub info: name, serial, and every paired motor with
     /// position and friendly name.
+    ///
+    /// Each motor's signal quality label is an empirical estimate —
+    /// see `motor <MOTOR> position --help` for threshold details.
+    #[command(long_about = "\
+Full hub info: name, serial, and every paired motor with position and \
+friendly name.
+
+Each motor's output includes a signal-strength value from the hub's \
+433 MHz radio link. The qualitative label (great/ok/weak/poor) is based \
+on empirical thresholds from real hardware — Rollease does not document \
+the exact units. See `motor <MOTOR> position --help` for the threshold \
+table.")]
     Info,
     /// Hub friendly name only.
     Name,
@@ -171,11 +183,48 @@ pub(crate) enum HubQuery {
 pub(crate) enum MotorQuery {
     /// Motor's friendly name.
     Name,
+
     /// Current position (closed%, tilt%, signal strength).
+    ///
+    /// The signal value is the undocumented RF link-quality byte on
+    /// the hub's 433 MHz ARC radio link to the motor. Rollease does
+    /// not publish its units or scale. The qualitative labels shown
+    /// alongside the value are based on empirical observations from
+    /// real hardware and should be treated as rough guidance, not
+    /// precise engineering data.
+    ///
+    /// ```text
+    ///   >= 80  "great"  (observed on motors physically close to the hub)
+    ///   60-79  "ok"     (observed on more distant motors)
+    ///   40-59  "weak"   (described as marginal in community references)
+    ///   < 40   "poor"
+    /// ```
+    #[command(long_about = "\
+Current position (closed%, tilt%, signal strength).
+
+The signal value is the undocumented RF link-quality byte on the hub's \
+433 MHz ARC radio link to the motor. Rollease does not publish its units \
+or scale. The qualitative labels shown alongside the value are based on \
+empirical observations from real hardware and should be treated as rough \
+guidance, not precise engineering data:
+
+  >= 80  \"great\"  (observed on motors physically close to the hub)
+  60-79  \"ok\"     (observed on more distant motors)
+  40-59  \"weak\"   (described as marginal in community references)
+  < 40   \"poor\"")]
     Position,
+
     /// Motor type and firmware version.
     Version,
+
     /// Battery voltage and signal strength.
+    ///
+    /// Signal thresholds are the same as for the `position` subcommand.
+    #[command(long_about = "\
+Battery voltage and signal strength.
+
+Signal thresholds are the same as for the `position` subcommand — see \
+`motor <MOTOR> position --help` for details.")]
     Voltage,
 }
 

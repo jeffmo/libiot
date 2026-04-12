@@ -19,7 +19,7 @@ use crate::hub_connection::connect_from_cli;
 /// Execute the CLI command. This is the single entry point called from
 /// `main()` after clap parsing.
 pub(crate) async fn run(cli: Cli) -> CliResult<()> {
-    let fmt = cli.output;
+    let fmt = cli.format;
 
     match cli.command {
         // Shell completions and man pages don't need a hub connection.
