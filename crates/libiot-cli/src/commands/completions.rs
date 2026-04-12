@@ -39,24 +39,15 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
     // leak the dynamic names — the process exits shortly after anyway.
     for name in &discovered_names {
         let leaked: &'static str = Box::leak(name.clone().into_boxed_str());
-        cmd = cmd.subcommand(
-            clap::Command::new(leaked)
-                .hide(true)
-                .trailing_var_arg(true),
-        );
+        cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
     }
 
     // Inject aliases as hidden subcommands (skip names already added).
     if let Ok(settings) = load_settings() {
         for alias_name in settings.aliases.keys() {
             if !discovered_names.contains(alias_name) {
-                let leaked: &'static str =
-                    Box::leak(alias_name.clone().into_boxed_str());
-                cmd = cmd.subcommand(
-                    clap::Command::new(leaked)
-                        .hide(true)
-                        .trailing_var_arg(true),
-                );
+                let leaked: &'static str = Box::leak(alias_name.clone().into_boxed_str());
+                cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
             }
         }
     }

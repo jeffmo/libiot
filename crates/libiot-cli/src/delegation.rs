@@ -65,12 +65,11 @@ pub(crate) fn resolve_delegation_with(
         .map(|s| s.as_str())
         .unwrap_or(name);
 
-    let binary_path =
-        find_cli_with_path(resolved_name, path_str).ok_or_else(|| {
-            CliError::DelegationTargetNotFound {
-                name: name.to_owned(),
-            }
-        })?;
+    let binary_path = find_cli_with_path(resolved_name, path_str).ok_or_else(|| {
+        CliError::DelegationTargetNotFound {
+            name: name.to_owned(),
+        }
+    })?;
 
     let env_vars = resolve_env_vars(settings, name);
 

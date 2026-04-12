@@ -39,10 +39,7 @@ fn make_path(dirs: &[&Path]) -> String {
 }
 
 /// Construct a [`Settings`] with the given aliases and env vars.
-fn make_settings(
-    aliases: &[(&str, &str)],
-    env_vars: &[(&str, &[(&str, &str)])],
-) -> Settings {
+fn make_settings(aliases: &[(&str, &str)], env_vars: &[(&str, &[(&str, &str)])]) -> Settings {
     let mut s = Settings::default();
     for (alias, target) in aliases {
         s.aliases.insert((*alias).to_owned(), (*target).to_owned());
@@ -86,13 +83,16 @@ fn direct_command_resolves_to_binary() {
 #[test]
 fn alias_resolves_to_target_binary() {
     let tmp = tempfile::tempdir().unwrap();
-    create_file(tmp.path(), "libiot-real-device", /* executable = */ true);
+    create_file(
+        tmp.path(),
+        "libiot-real-device",
+        /* executable = */ true,
+    );
 
     let path_str = make_path(&[tmp.path()]);
     let settings = make_settings(&[("shortcut", "real-device")], &[]);
 
-    let (binary, env_vars) =
-        resolve_delegation_with("shortcut", &settings, &path_str).unwrap();
+    let (binary, env_vars) = resolve_delegation_with("shortcut", &settings, &path_str).unwrap();
 
     assert_eq!(binary, tmp.path().join("libiot-real-device"));
     assert!(env_vars.is_empty(), "no env vars configured");
@@ -118,8 +118,7 @@ fn alias_with_env_vars_merges_and_prefixes() {
         ],
     );
 
-    let (_binary, env_vars) =
-        resolve_delegation_with("myhub", &settings, &path_str).unwrap();
+    let (_binary, env_vars) = resolve_delegation_with("myhub", &settings, &path_str).unwrap();
 
     // Alias HOST overrides command HOST.
     assert_eq!(env_vars.get("LIBIOT_HOST").unwrap(), "10.0.0.1");
