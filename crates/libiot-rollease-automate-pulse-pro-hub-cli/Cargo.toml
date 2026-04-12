@@ -30,7 +30,7 @@ default = []
 dangerous-ops = ["libiot-rollease-automate-pulse-pro-hub/dangerous-ops"]
 
 [dependencies]
-libiot-rollease-automate-pulse-pro-hub = { path = "../libiot-rollease-automate-pulse-pro-hub" }
+libiot-rollease-automate-pulse-pro-hub = { path = "../libiot-rollease-automate-pulse-pro-hub", version = "0.1.0" }
 clap          = { workspace = true }
 clap_complete = { workspace = true }
 clap_mangen   = { workspace = true }
