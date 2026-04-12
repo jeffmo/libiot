@@ -10,6 +10,7 @@
 
 mod cli;
 mod commands;
+mod delegation;
 mod discovery;
 mod error;
 mod output;
@@ -116,10 +117,14 @@ fn maybe_hint_delegation(raw_args: &[OsString], clap_err: &clap::Error) {
 
 /// Delegate execution to a discovered `libiot-*-cli` binary.
 ///
-/// This is a stub that will be replaced by the full delegation module.
+/// Resolves aliases and environment variables from settings, then
+/// replaces the current process via the Unix exec() syscall. Only
+/// returns on error.
 fn run_delegation(args: &[OsString]) -> ! {
-    // Delegation module not yet implemented.
-    let name = args[0].to_string_lossy();
-    eprintln!("error: delegation not yet implemented for {name:?}");
-    std::process::exit(1)
+    if let Err(err) = delegation::delegate(args) {
+        eprintln!("error: {err}");
+        std::process::exit(err.exit_code());
+    }
+    // delegate() only returns on error; the syscall replaces the process.
+    unreachable!("the exec syscall should have replaced this process")
 }
