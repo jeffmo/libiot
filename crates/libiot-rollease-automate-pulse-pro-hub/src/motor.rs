@@ -5,7 +5,7 @@ use crate::motor_position::MotorPosition;
 use crate::motor_version::MotorVersion;
 
 /// Aggregated description of one paired motor, as assembled by
-/// [`crate::AutomatePulseProHub::snapshot`] or
+/// [`crate::AutomatePulseProHub::info`] or
 /// [`crate::AutomatePulseProHub::list_motors`].
 ///
 /// A `Motor` value represents the client's best available view of a

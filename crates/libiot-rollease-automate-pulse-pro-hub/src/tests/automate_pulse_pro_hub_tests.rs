@@ -201,12 +201,12 @@ async fn query_surfaces_hub_error_frame_as_typed_error() {
     fake_hub.await.unwrap();
 }
 
-// -- snapshot (the highest-value integration test) -----------------------
+// -- info (the highest-value integration test) -----------------------
 
-/// Verifies that `AutomatePulseProHub::snapshot` performs the
+/// Verifies that `AutomatePulseProHub::info` performs the
 /// documented two-batch query pattern (hub metadata + position enum,
 /// then per-motor name queries) and correctly stitches the results
-/// into a `HubSnapshot`. Uses the real captured bytes from §6 of
+/// into a `HubInfo`. Uses the real captured bytes from §6 of
 /// `PULSE_PRO_LOCAL_API.md` as the hub replies.
 ///
 /// Written by Claude Code, reviewed by a human.
@@ -242,14 +242,14 @@ async fn snapshot_matches_real_hub_capture_from_spec() {
     });
 
     let hub = AutomatePulseProHub::connect(&addr_str).await.unwrap();
-    let snapshot = hub.snapshot().await.unwrap();
+    let info = hub.info().await.unwrap();
 
-    assert_eq!(snapshot.hub_name, "6217 Shade Hub");
-    assert_eq!(snapshot.hub_serial, "2016197");
-    assert_eq!(snapshot.motors.len(), 3, "hub gateway should be filtered");
+    assert_eq!(info.hub_name, "6217 Shade Hub");
+    assert_eq!(info.hub_serial, "2016197");
+    assert_eq!(info.motors.len(), 3, "hub gateway should be filtered");
 
     // Motor 0 — 4JK "John House", 0% closed, DC motor.
-    let m0 = &snapshot.motors[0];
+    let m0 = &info.motors[0];
     assert_eq!(m0.address, MotorAddress::new("4JK").unwrap());
     assert_eq!(m0.name.as_deref(), Some("John House"));
     assert_eq!(m0.version.motor_type, MotorType::Dc);
@@ -257,7 +257,7 @@ async fn snapshot_matches_real_hub_capture_from_spec() {
     assert_eq!(p0.closed_percent, 0);
 
     // Motor 1 — MWX "Dining Room", 100% closed, tilt 180.
-    let m1 = &snapshot.motors[1];
+    let m1 = &info.motors[1];
     assert_eq!(m1.address, MotorAddress::new("MWX").unwrap());
     assert_eq!(m1.name.as_deref(), Some("Dining Room"));
     let p1 = m1.position.expect("MWX should have a position");
@@ -265,7 +265,7 @@ async fn snapshot_matches_real_hub_capture_from_spec() {
     assert_eq!(p1.tilt_percent, 180);
 
     // Motor 2 — 3YC "Kitchen", 0% closed.
-    let m2 = &snapshot.motors[2];
+    let m2 = &info.motors[2];
     assert_eq!(m2.address, MotorAddress::new("3YC").unwrap());
     assert_eq!(m2.name.as_deref(), Some("Kitchen"));
 

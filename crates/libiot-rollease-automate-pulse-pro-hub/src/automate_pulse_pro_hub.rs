@@ -42,7 +42,7 @@ use crate::codec::encode_tilt;
 use crate::codec::encode_unpair_motor;
 use crate::error::Error;
 use crate::error::Result;
-use crate::hub_snapshot::HubSnapshot;
+use crate::hub_info::HubInfo;
 use crate::motor::Motor;
 use crate::motor_address::MotorAddress;
 use crate::motor_position::MotorPosition;
@@ -185,15 +185,16 @@ impl AutomatePulseProHub {
         })
     }
 
-    /// Take a full snapshot of the hub state in one batched round-trip.
+    /// Query full hub info — name, serial, and every paired motor — in
+    /// one batched round-trip.
     ///
     /// Sends a single concatenated write containing the hub name, hub
     /// serial, version enumeration, and position enumeration queries.
     /// Then sends a second batched write of per-motor name queries.
-    /// Returns a [`HubSnapshot`] with every paired motor (hub gateway
+    /// Returns a [`HubInfo`] with every paired motor (hub gateway
     /// filtered out), each populated with name, version, and position
     /// if the hub responded with one.
-    pub async fn snapshot(&self) -> Result<HubSnapshot> {
+    pub async fn info(&self) -> Result<HubInfo> {
         // First batch: hub name + hub serial + version enum + position enum.
         let mut batch1 = Vec::new();
         batch1.extend_from_slice(&encode_query_hub_name());
@@ -207,7 +208,7 @@ impl AutomatePulseProHub {
             inner.read_for(BROADCAST_COLLECT_WINDOW).await?
         };
 
-        // Assemble the partial snapshot from the first batch.
+        // Assemble the partial info from the first batch.
         let mut hub_name: Option<String> = None;
         let mut hub_serial: Option<String> = None;
         let mut motor_addresses: Vec<MotorAddress> = Vec::new();
@@ -234,7 +235,7 @@ impl AutomatePulseProHub {
                     motor_positions.push((addr, position));
                 },
                 // Hub errors, motor names, etc. are unexpected in the first
-                // batch but don't fail the snapshot — they're just ignored.
+                // batch but don't fail the info — they're just ignored.
                 _ => {},
             }
         }
@@ -290,16 +291,16 @@ impl AutomatePulseProHub {
             })
             .collect();
 
-        Ok(HubSnapshot {
+        Ok(HubInfo {
             hub_name: hub_name.unwrap_or_default(),
             hub_serial: hub_serial.unwrap_or_default(),
             motors,
         })
     }
 
-    /// Return just the motors from a fresh [`AutomatePulseProHub::snapshot`].
+    /// Return just the motors from a fresh [`AutomatePulseProHub::info`].
     pub async fn list_motors(&self) -> Result<Vec<Motor>> {
-        Ok(self.snapshot().await?.motors)
+        Ok(self.info().await?.motors)
     }
 
     // ---- Per-motor queries --------------------------------------------
@@ -409,9 +410,14 @@ impl AutomatePulseProHub {
         self.fire_and_forget(&bytes).await
     }
 
-    /// Tilt a specific motor to a given percentage (0..=100). Only
-    /// tilt-capable motors (e.g. venetian blinds) respond to this
-    /// command — non-tilt motors silently ignore it.
+    /// Tilt a specific motor to a given percentage (0..=100).
+    ///
+    /// "Tilt" refers to the angle of individual slats on venetian
+    /// blinds (horizontal blinds) or shutters: `0` = slats
+    /// horizontal/open (maximum light), `100` = slats fully
+    /// angled/closed (minimum light). Tilt only applies to slatted
+    /// shades — roller shades, cellular shades, and drapes silently
+    /// ignore this command.
     ///
     /// # Errors
     ///

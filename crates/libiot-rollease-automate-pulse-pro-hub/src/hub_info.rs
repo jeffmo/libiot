@@ -1,10 +1,10 @@
-//! The [`HubSnapshot`] struct — full hub state returned by `snapshot()`.
+//! The [`HubInfo`] struct — full hub state returned by `info()`.
 
 use crate::motor::Motor;
 
-/// A full snapshot of the hub's state at one point in time.
+/// Current state of the hub and all its paired motors.
 ///
-/// Assembled by [`crate::AutomatePulseProHub::snapshot`] using the
+/// Assembled by [`crate::AutomatePulseProHub::info`] using the
 /// one-shot batch-query pattern documented in §3.1 of the in-crate
 /// `PULSE_PRO_LOCAL_API.md`: a single TCP write containing the hub
 /// name, hub serial, version enumeration, and position enumeration
@@ -18,7 +18,7 @@ use crate::motor::Motor;
 /// `motors`, which matches the behavior of the `blinds.sh list`
 /// reference implementation.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct HubSnapshot {
+pub struct HubInfo {
     /// The hub's friendly name as set in the Pulse 2 mobile app.
     pub hub_name: String,
 

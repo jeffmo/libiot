@@ -23,7 +23,7 @@ When updating this document:
 **Core Implementation: v1 ASCII channel landed**
 - Pure codec layer (encoder + parser + IncomingFrame)
 - Generic `Transport<S>` over `AsyncRead + AsyncWrite`
-- Public `AutomatePulseProHub` with motor control + queries + snapshot
+- Public `AutomatePulseProHub` with motor control + queries + info
 - All documented hub error codes handled
 - `dangerous-ops` feature flag for pairing/reset operations
 
@@ -88,7 +88,7 @@ matters for state-mirroring integrations (e.g. Home Assistant).
 ### 2.1 Name-based motor resolution
 
 **Purpose:** `hub.close("kitchen")` as a convenience on top of
-`snapshot()`. Matches `blinds.sh`'s `resolve_addr` (case-insensitive
+`info()`. Matches `blinds.sh`'s `resolve_addr` (case-insensitive
 substring).
 
 **Priority:** LOW

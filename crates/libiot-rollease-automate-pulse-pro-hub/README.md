@@ -23,10 +23,10 @@ hub.close_all().await?;
 let kitchen = MotorAddress::new("3YC")?;
 hub.set_position(&kitchen, 50).await?;
 
-// Take a full snapshot of the hub state.
-let snapshot = hub.snapshot().await?;
-println!("hub: {} (serial {})", snapshot.hub_name, snapshot.hub_serial);
-for motor in &snapshot.motors {
+// Query the full hub info — name, serial, and every paired motor.
+let info = hub.info().await?;
+println!("hub: {} (serial {})", info.hub_name, info.hub_serial);
+for motor in &info.motors {
     println!("  {}: {:?}", motor.address, motor.position);
 }
 # Ok(()) }

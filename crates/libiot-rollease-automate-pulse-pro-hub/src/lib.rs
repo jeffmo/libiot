@@ -34,7 +34,7 @@
 //! # Ok(()) }
 //! ```
 //!
-//! Take a full snapshot of the hub — hub name, serial, and every paired
+//! Query the full hub info — hub name, serial, and every paired
 //! motor's current position and friendly name — in a single batched
 //! round-trip:
 //!
@@ -43,9 +43,9 @@
 //!
 //! # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 //! let hub = AutomatePulseProHub::connect("192.168.5.234:1487").await?;
-//! let snapshot = hub.snapshot().await?;
-//! println!("hub: {} (serial {})", snapshot.hub_name, snapshot.hub_serial);
-//! for motor in &snapshot.motors {
+//! let info = hub.info().await?;
+//! println!("hub: {} (serial {})", info.hub_name, info.hub_serial);
+//! for motor in &info.motors {
 //!     println!("  {}: {:?}", motor.address, motor.position);
 //! }
 //! # Ok(()) }
@@ -79,7 +79,7 @@
 mod automate_pulse_pro_hub;
 mod codec;
 mod error;
-mod hub_snapshot;
+mod hub_info;
 mod motor;
 mod motor_address;
 mod motor_position;
@@ -96,7 +96,7 @@ pub use crate::automate_pulse_pro_hub::DEFAULT_PORT;
 pub use crate::error::Error;
 pub use crate::error::HubErrorCode;
 pub use crate::error::Result;
-pub use crate::hub_snapshot::HubSnapshot;
+pub use crate::hub_info::HubInfo;
 pub use crate::motor::Motor;
 pub use crate::motor_address::MotorAddress;
 pub use crate::motor_position::MotorPosition;
