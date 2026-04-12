@@ -75,9 +75,13 @@ pub(crate) struct Cli {
 #[derive(Subcommand, Debug)]
 pub(crate) enum Command {
     /// Generate shell completion scripts.
+    ///
+    /// Run without arguments to see installation instructions for each
+    /// supported shell.
     Completions {
         /// Target shell (bash, zsh, fish, powershell, elvish).
-        shell: clap_complete::Shell,
+        /// Omit to see installation instructions.
+        shell: Option<clap_complete::Shell>,
     },
     /// Print the path to the settings file.
     ConfigPath,

@@ -10,14 +10,52 @@ use crate::cli::Cli;
 use crate::discovery::discover_clis;
 use crate::settings::load_settings;
 
-/// Generate shell completions to stdout for the given shell.
+/// Generate shell completions to stdout for the given shell, or print
+/// installation instructions if no shell is specified.
 ///
 /// Discovered CLI binaries and configured aliases are injected as hidden
 /// subcommands so that shell completion can suggest them even though they
 /// are not part of the static clap tree.
-pub(crate) fn run_completions(shell: clap_complete::Shell) {
-    let output = generate_completions(shell);
-    print!("{output}");
+pub(crate) fn run_completions(shell: Option<clap_complete::Shell>) {
+    match shell {
+        Some(sh) => {
+            let output = generate_completions(sh);
+            print!("{output}");
+        },
+        None => print_install_instructions(),
+    }
+}
+
+/// Print instructions for installing shell completions for each
+/// supported shell.
+fn print_install_instructions() {
+    println!("Generate and install shell completions for libiot.");
+    println!();
+    println!("Usage: libiot completions <SHELL>");
+    println!();
+    println!("Supported shells and installation instructions:");
+    println!();
+    println!("  bash:");
+    println!("    libiot completions bash > ~/.local/share/bash-completion/completions/libiot");
+    println!();
+    println!("  zsh:");
+    println!("    libiot completions zsh > ~/.zfunc/_libiot");
+    println!("    # Ensure ~/.zfunc is in your fpath (add to ~/.zshrc if needed):");
+    println!("    #   fpath=(~/.zfunc $fpath)");
+    println!("    #   autoload -Uz compinit && compinit");
+    println!();
+    println!("  fish:");
+    println!("    libiot completions fish > ~/.config/fish/completions/libiot.fish");
+    println!();
+    println!("  powershell:");
+    println!("    libiot completions powershell >> $PROFILE");
+    println!();
+    println!("  elvish:");
+    println!("    libiot completions elvish >> ~/.elvish/rc.elv");
+    println!();
+    println!("Completions include both built-in commands and any libiot-*");
+    println!("CLIs currently on PATH plus configured aliases. Re-run after");
+    println!("installing or uninstalling CLIs to keep completions up to date.");
 }
 
 /// Generate shell completions and return the output as a [`String`].
