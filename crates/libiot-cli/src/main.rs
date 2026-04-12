@@ -8,6 +8,7 @@
 //! environment variable injection, and `cargo install`/`uninstall`
 //! wrappers.
 
+mod cli;
 mod discovery;
 mod error;
 mod output;
