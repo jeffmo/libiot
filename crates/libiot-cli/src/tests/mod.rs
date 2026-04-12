@@ -2,3 +2,4 @@
 
 mod error_tests;
 mod output_tests;
+mod settings_tests;

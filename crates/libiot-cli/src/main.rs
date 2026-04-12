@@ -10,6 +10,7 @@
 
 mod error;
 mod output;
+mod settings;
 
 #[cfg(test)]
 mod tests;
