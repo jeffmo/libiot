@@ -82,6 +82,10 @@ pub(crate) enum Command {
         /// Target shell (bash, zsh, fish, powershell, elvish).
         /// Omit to see installation instructions.
         shell: Option<clap_complete::Shell>,
+        /// Print only the shell-config snippet (for piping into a config
+        /// file). Requires a shell argument.
+        #[arg(long)]
+        print_config: bool,
     },
     /// Print the path to the settings file.
     ConfigPath,

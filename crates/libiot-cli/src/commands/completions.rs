@@ -19,27 +19,47 @@ use crate::output::OutputContext;
 use crate::settings::config_dir;
 use crate::settings::load_settings;
 
-/// Generate shell completions, write them to disk, and print a source
-/// snippet — or print installation instructions if no shell is given.
+/// Entry point for the `completions` subcommand.
+///
+/// - No shell argument: print setup instructions.
+/// - Shell argument: write completions to disk and print a snippet.
+/// - `--print-config` + shell: print *only* the snippet (for piping
+///   into a shell config file).
 pub(crate) fn run_completions(
     shell: Option<clap_complete::Shell>,
+    print_config: bool,
     ctx: OutputContext,
 ) -> CliResult<()> {
-    if let Some(sh) = shell {
-        write_and_print_snippet(sh, ctx)
-    } else {
-        print_install_instructions();
-        Ok(())
+    match (shell, print_config) {
+        (Some(sh), true) => print_config_snippet(sh),
+        (Some(sh), false) => write_and_print_snippet(sh, ctx),
+        (None, _) => {
+            print_install_instructions();
+            Ok(())
+        },
     }
 }
 
 // ---------------------------------------------------------------------------
-// Write + snippet
+// --print-config: snippet only
+// ---------------------------------------------------------------------------
+
+/// Print just the raw source snippet to stdout (no surrounding
+/// instructions). Intended for `>> ~/.zshrc` style piping.
+fn print_config_snippet(shell: clap_complete::Shell) -> CliResult<()> {
+    let comp_dir = config_dir()?.join("completions");
+    let file_path = comp_dir.join(completion_filename(shell));
+    println!("{}", source_snippet(shell, &file_path));
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Default: write file + print instructions
 // ---------------------------------------------------------------------------
 
 /// Generate the completion script, write it to
-/// `~/.config/libiot/completions/<filename>`, and print a short snippet
-/// the user can append to their shell configuration file.
+/// `~/.config/libiot/completions/<filename>`, and print a snippet plus
+/// a one-liner alternative using `--print-config`.
 fn write_and_print_snippet(shell: clap_complete::Shell, ctx: OutputContext) -> CliResult<()> {
     let script = generate_completions(shell);
     let comp_dir = config_dir()?.join("completions");
@@ -50,15 +70,28 @@ fn write_and_print_snippet(shell: clap_complete::Shell, ctx: OutputContext) -> C
 
     if !ctx.quiet {
         let snippet = source_snippet(shell, &file_path);
+        let indented_snippet = indent(&snippet, "  ");
+        let shell_name = completion_filename(shell);
+        let config_file = shell_config_file(shell);
+
         println!("Completions written to {}", file_path.display());
         println!();
         println!("Add the following to your shell configuration file:");
         println!();
-        println!("{snippet}");
+        println!("{indented_snippet}");
+        println!();
+        println!("Or run:");
+        println!();
+        println!("  libiot completions --print-config {shell_name} >> {config_file}");
+        println!();
     }
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 /// The filename used inside the completions directory for each shell.
 fn completion_filename(shell: clap_complete::Shell) -> &'static str {
@@ -69,8 +102,20 @@ fn completion_filename(shell: clap_complete::Shell) -> &'static str {
         Shell::Fish => "fish",
         Shell::PowerShell => "powershell",
         Shell::Elvish => "elvish",
-        // clap_complete::Shell is non-exhaustive.
         _ => "completions",
+    }
+}
+
+/// The conventional shell configuration file for each shell.
+fn shell_config_file(shell: clap_complete::Shell) -> &'static str {
+    use clap_complete::Shell;
+    match shell {
+        Shell::Bash => "~/.bashrc",
+        Shell::Zsh => "~/.zshrc",
+        Shell::Fish => "~/.config/fish/config.fish",
+        Shell::PowerShell => "$PROFILE",
+        Shell::Elvish => "~/.elvish/rc.elv",
+        _ => "<your shell config>",
     }
 }
 
@@ -103,6 +148,14 @@ fn source_snippet(shell: clap_complete::Shell, file_path: &Path) -> String {
         ),
         _ => format!("source \"{path}\""),
     }
+}
+
+/// Indent every line of `text` with `prefix`.
+fn indent(text: &str, prefix: &str) -> String {
+    text.lines()
+        .map(|line| format!("{prefix}{line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Create the completions directory (if needed) and write the script.
@@ -163,22 +216,15 @@ fn print_install_instructions() {
 pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
     let mut cmd = Cli::command();
 
-    // Collect discovered CLI names.
     let discovered = discover_clis();
     let discovered_names: std::collections::BTreeSet<String> =
         discovered.iter().map(|c| c.name.clone()).collect();
 
-    // Inject discovered CLIs as hidden subcommands.
-    //
-    // `clap::Command::new` requires `impl Into<Str>` which only accepts
-    // `&'static str`.  Since this is a one-shot generation function we
-    // leak the dynamic names — the process exits shortly after anyway.
     for name in &discovered_names {
         let leaked: &'static str = Box::leak(name.clone().into_boxed_str());
         cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
     }
 
-    // Inject aliases as hidden subcommands (skip names already added).
     if let Ok(settings) = load_settings() {
         for alias_name in settings.aliases.keys() {
             if !discovered_names.contains(alias_name) {
