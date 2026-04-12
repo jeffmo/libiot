@@ -207,6 +207,7 @@ pub(crate) enum ListTarget {
 
 /// Arguments for the `install` subcommand.
 #[derive(clap::Args, Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub(crate) struct InstallArgs {
     /// Short name (e.g. "rollease-automate-pulse-pro-hub").
     pub name: String,
@@ -257,6 +258,7 @@ pub(crate) struct InstallArgs {
 
 /// Arguments for the `uninstall` subcommand.
 #[derive(clap::Args, Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub(crate) struct UninstallArgs {
     /// Short name (e.g. "rollease-automate-pulse-pro-hub").
     pub name: String,

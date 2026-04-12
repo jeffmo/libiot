@@ -118,7 +118,7 @@ fn maybe_hint_delegation(raw_args: &[OsString], clap_err: &clap::Error) {
 /// Delegate execution to a discovered `libiot-*-cli` binary.
 ///
 /// Resolves aliases and environment variables from settings, then
-/// replaces the current process via the Unix exec() syscall. Only
+/// replaces the current process via the Unix `exec()` syscall. Only
 /// returns on error.
 fn run_delegation(args: &[OsString]) -> ! {
     if let Err(err) = delegation::delegate(args) {

@@ -59,11 +59,7 @@ pub(crate) fn resolve_delegation_with(
 ) -> CliResult<(PathBuf, BTreeMap<String, String>)> {
     // Resolve through aliases: if `name` is an alias, the underlying
     // command is what we look up on PATH.
-    let resolved_name = settings
-        .aliases
-        .get(name)
-        .map(|s| s.as_str())
-        .unwrap_or(name);
+    let resolved_name = settings.aliases.get(name).map_or(name, String::as_str);
 
     let binary_path = find_cli_with_path(resolved_name, path_str).ok_or_else(|| {
         CliError::DelegationTargetNotFound {

@@ -65,6 +65,6 @@ fn is_builtin_case_sensitive() {
 #[test]
 fn builtin_names_sorted() {
     let mut sorted = BUILTIN_NAMES.to_vec();
-    sorted.sort();
+    sorted.sort_unstable();
     assert_eq!(BUILTIN_NAMES, sorted.as_slice());
 }
