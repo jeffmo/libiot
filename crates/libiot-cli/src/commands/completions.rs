@@ -355,21 +355,118 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
     let discovered_names: std::collections::BTreeSet<String> =
         discovered.iter().map(|c| c.name.clone()).collect();
 
+    let alias_names: std::collections::BTreeSet<String> = load_settings()
+        .map(|s| s.aliases.keys().cloned().collect())
+        .unwrap_or_default();
+
+    // All known names: CLIs + aliases.
+    let all_names: Vec<&str> = discovered_names
+        .iter()
+        .chain(alias_names.iter())
+        .map(String::as_str)
+        .collect();
+
+    // -- inject discovered CLIs and aliases as hidden top-level subcommands --
     for name in &discovered_names {
         let leaked: &'static str = Box::leak(name.clone().into_boxed_str());
         cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
     }
-
-    if let Ok(settings) = load_settings() {
-        for alias_name in settings.aliases.keys() {
-            if !discovered_names.contains(alias_name) {
-                let leaked: &'static str = Box::leak(alias_name.clone().into_boxed_str());
-                cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
-            }
+    for alias_name in &alias_names {
+        if !discovered_names.contains(alias_name) {
+            let leaked: &'static str = Box::leak(alias_name.clone().into_boxed_str());
+            cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
         }
     }
+
+    // -- add possible_values to positional args so tab-completion works ------
+    inject_completions_for_positional_args(&mut cmd, &discovered_names, &alias_names, &all_names);
 
     let mut buf: Vec<u8> = Vec::new();
     clap_complete::generate(shell, &mut cmd, "libiot", &mut buf);
     String::from_utf8_lossy(&buf).into_owned()
+}
+
+/// Walk the clap `Command` tree and set `possible_values` on positional
+/// arguments that should complete to discovered CLIs and/or aliases.
+fn inject_completions_for_positional_args(
+    cmd: &mut clap::Command,
+    cli_names: &std::collections::BTreeSet<String>,
+    alias_names: &std::collections::BTreeSet<String>,
+    all_names: &[&str],
+) {
+    // Leak string slices so they satisfy clap's 'static requirement.
+    let cli_values: Vec<clap::builder::PossibleValue> = cli_names
+        .iter()
+        .map(|n| clap::builder::PossibleValue::new(leak_str(n)))
+        .collect();
+    let alias_values: Vec<clap::builder::PossibleValue> = alias_names
+        .iter()
+        .map(|n| clap::builder::PossibleValue::new(leak_str(n)))
+        .collect();
+    let all_values: Vec<clap::builder::PossibleValue> = all_names
+        .iter()
+        .map(|n| clap::builder::PossibleValue::new(leak_str(n)))
+        .collect();
+
+    // set alias <CMD> — complete to discovered CLIs
+    set_possible_values(cmd, &["set", "alias"], "cmd", &cli_values);
+
+    // set env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
+    set_possible_values(cmd, &["set", "env-var"], "cmd_or_alias", &all_values);
+
+    // unset alias <ALIAS_NAME> — complete to aliases
+    set_possible_values(cmd, &["unset", "alias"], "alias_name", &alias_values);
+
+    // unset env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
+    set_possible_values(cmd, &["unset", "env-var"], "cmd_or_alias", &all_values);
+
+    // get alias <ALIAS_NAME> — complete to aliases
+    set_possible_values(cmd, &["get", "alias"], "alias_name", &alias_values);
+
+    // get env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
+    set_possible_values(cmd, &["get", "env-var"], "cmd_or_alias", &all_values);
+
+    // list env-vars <CMD_OR_ALIAS> — complete to CLIs + aliases
+    set_possible_values(cmd, &["list", "env-vars"], "cmd_or_alias", &all_values);
+
+    // uninstall <NAME> — complete to discovered CLIs
+    set_possible_values(cmd, &["uninstall"], "name", &cli_values);
+}
+
+/// Walk into `cmd` following the subcommand `path`, then replace the
+/// named argument's value parser with one that offers `values`.
+///
+/// Silently does nothing if the path or argument doesn't exist (so
+/// this is safe to call even if clap's structure changes).
+fn set_possible_values(
+    cmd: &mut clap::Command,
+    path: &[&str],
+    arg_name: &str,
+    values: &[clap::builder::PossibleValue],
+) {
+    if values.is_empty() {
+        return;
+    }
+    let mut current = &mut *cmd;
+    for &segment in path {
+        let Some(sub) = current.find_subcommand_mut(segment) else {
+            return;
+        };
+        current = sub;
+    }
+    // clap doesn't have a direct "replace arg" API, but we can
+    // rebuild the arg list. Simpler: use mut_arg to add possible_values.
+    *current = current.clone().mut_arg(arg_name, |arg| {
+        arg.value_parser(clap::builder::PossibleValuesParser::new(
+            values.iter().cloned(),
+        ))
+    });
+}
+
+/// Leak a string to get a `&'static str`.
+///
+/// This is a one-shot generation function — the process exits shortly
+/// after, so the leak is harmless.
+fn leak_str(s: &str) -> &'static str {
+    Box::leak(s.to_owned().into_boxed_str())
 }
