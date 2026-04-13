@@ -62,6 +62,13 @@ fn print_config_snippet(shell: clap_complete::Shell) -> CliResult<()> {
 /// `~/.config/libiot/completions/<filename>`, and print a snippet plus
 /// a one-liner alternative using `--print-config`.
 fn write_and_print_snippet(shell: clap_complete::Shell, ctx: OutputContext) -> CliResult<()> {
+    // Before generating our own completions, ensure each discovered
+    // sub-CLI has its completion file on disk. This makes it
+    // unnecessary for users to manually run each sub-CLI's
+    // `completions` command — `libiot completions zsh` is the only
+    // command they need.
+    generate_subcli_completions(shell, ctx.verbose);
+
     let script = generate_completions(shell);
     let comp_dir = config_dir()?.join("completions");
     let filename = completion_filename(shell);
@@ -274,6 +281,10 @@ fn regenerate_existing_completions_sync(verbose: bool) {
             eprintln!("completions: regenerating {name_str} completions...");
         }
 
+        // Ensure sub-CLI completion files are up-to-date before we
+        // regenerate our own (which sources them for delegation).
+        generate_subcli_completions(shell, verbose);
+
         let script = generate_completions(shell);
         let file_path = comp_dir.join(&*name_str);
         if let Err(e) = fs::write(&file_path, script.as_bytes()) {
@@ -343,6 +354,79 @@ fn spawn_background_regeneration() {
 pub(crate) fn run_background_regeneration() -> ! {
     regenerate_existing_completions_sync(/* verbose = */ false);
     std::process::exit(0)
+}
+
+/// Run each discovered sub-CLI's `completions <shell>` command so
+/// that its completion file exists on disk for delegation.
+///
+/// Supports both new-style CLIs (which write the file themselves)
+/// and old-style CLIs (which dump completions to stdout). For
+/// old-style CLIs, stdout is captured and written to the expected
+/// file path.
+///
+/// Errors are silently swallowed — a sub-CLI that doesn't support
+/// `completions` (or fails for any reason) is simply skipped.
+fn generate_subcli_completions(shell: clap_complete::Shell, verbose: bool) {
+    let shell_name = completion_filename(shell);
+    let comp_base = match config_dir() {
+        Ok(d) => d.join("completions"),
+        Err(_) => return,
+    };
+    let discovered = discover_clis();
+
+    for cli in &discovered {
+        let binary_name = format!("libiot-{}", cli.name);
+        let expected_file = comp_base.join(&binary_name).join(shell_name);
+
+        if verbose {
+            eprintln!("completions: generating {binary_name} {shell_name} completions...");
+        }
+
+        // Run the sub-CLI's completions command, capturing stdout in
+        // case it's an old-style CLI that dumps to stdout.
+        let result = std::process::Command::new(&cli.path)
+            .args(["completions", shell_name])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .output();
+
+        let output = match result {
+            Ok(o) if o.status.success() => o,
+            Ok(o) => {
+                if verbose {
+                    eprintln!(
+                        "completions: {binary_name} completions failed (exit {})",
+                        o.status.code().unwrap_or(-1)
+                    );
+                }
+                continue;
+            },
+            Err(e) => {
+                if verbose {
+                    eprintln!("completions: could not run {binary_name}: {e}");
+                }
+                continue;
+            },
+        };
+
+        // If the CLI wrote the file itself (new-style), we're done.
+        // If not (old-style, output went to stdout), write it ourselves.
+        if !expected_file.is_file() && !output.stdout.is_empty() {
+            let dir = comp_base.join(&binary_name);
+            if fs::create_dir_all(&dir).is_ok() {
+                let _ = fs::write(&expected_file, &output.stdout);
+            }
+        }
+
+        if verbose {
+            if expected_file.is_file() {
+                eprintln!("completions: {binary_name} completions generated");
+            } else {
+                eprintln!("completions: {binary_name} did not produce a completion file");
+            }
+        }
+    }
 }
 
 /// Generate shell completions and return the output as a [`String`].
