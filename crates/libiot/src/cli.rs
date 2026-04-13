@@ -328,6 +328,9 @@ pub(crate) struct UninstallArgs {
 pub(crate) struct UpdateArgs {
     /// CLI to update. Omit to update libiot itself.
     pub name: Option<String>,
+    /// Update all installed libiot CLIs and libiot itself.
+    #[arg(long, short)]
+    pub all: bool,
     /// Comma-separated list of features to activate.
     #[arg(long)]
     pub features: Option<String>,

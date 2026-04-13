@@ -17,10 +17,14 @@ use crate::output::render_ok_message;
 
 /// Execute the `update` built-in command.
 ///
-/// With no name argument, updates `libiot` itself. With a name,
-/// updates that specific CLI crate. In both cases, verifies the
-/// target was installed via `cargo install` before proceeding.
+/// - No name, no `--all`: updates `libiot` itself.
+/// - With a name: updates that specific CLI crate.
+/// - With `--all`: updates every cargo-installed `libiot*` crate.
 pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()> {
+    if args.all {
+        return run_update_all(args, ctx);
+    }
+
     let (crate_name, is_self_update) = match args.name {
         Some(ref name) => {
             let short = normalize_crate_name(name);
@@ -29,22 +33,102 @@ pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()>
         None => ("libiot".to_owned(), true),
     };
 
-    // -- verify cargo-installed ----------------------------------------------
-    if !is_cargo_installed(&crate_name) {
-        return Err(CliError::NotCargoInstalled { name: crate_name });
+    update_single_crate(&crate_name, args, ctx)?;
+
+    if is_self_update && !ctx.quiet {
+        print_self_update_hint();
     }
 
-    // -- build cargo args ----------------------------------------------------
-    let cargo_args = build_cargo_update_args(&crate_name, args, ctx);
+    if !args.no_update_completions {
+        crate::commands::completions::regenerate_existing_completions(ctx.verbose);
+    }
 
-    // -- dry run -------------------------------------------------------------
+    Ok(())
+}
+
+/// Update every cargo-installed libiot crate (CLIs + libiot itself).
+fn run_update_all(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()> {
+    let crates = list_installed_libiot_crates();
+
+    if crates.is_empty() {
+        if !ctx.quiet {
+            eprintln!("No cargo-installed libiot crates found.");
+        }
+        return Ok(());
+    }
+
+    if !ctx.quiet {
+        eprintln!(
+            "Updating {} crate{}...",
+            crates.len(),
+            if crates.len() == 1 { "" } else { "s" }
+        );
+        eprintln!();
+    }
+
+    let mut any_failed = false;
+    let mut updated_self = false;
+
+    for crate_name in &crates {
+        if !ctx.quiet {
+            eprintln!("--- Updating {crate_name} ---");
+        }
+
+        match update_single_crate(crate_name, args, ctx) {
+            Ok(()) => {
+                if crate_name == "libiot" {
+                    updated_self = true;
+                }
+            },
+            Err(e) => {
+                // Print the error but continue with remaining crates.
+                eprintln!("error: {e}");
+                eprintln!();
+                any_failed = true;
+            },
+        }
+    }
+
+    if updated_self && !ctx.quiet {
+        print_self_update_hint();
+    }
+
+    if !args.no_update_completions {
+        crate::commands::completions::regenerate_existing_completions(ctx.verbose);
+    }
+
+    if any_failed {
+        // Return a generic error so the exit code is non-zero, but
+        // don't duplicate error messages — they were already printed.
+        Err(CliError::CargoInstallFailed {
+            name: "(some crates failed to update)".to_owned(),
+            code: 1,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+/// Update a single crate via `cargo install --force`.
+///
+/// Verifies the crate was cargo-installed, builds args, runs cargo,
+/// and renders output. Does NOT regenerate completions or print the
+/// self-update hint — the caller handles those.
+fn update_single_crate(crate_name: &str, args: &UpdateArgs, ctx: OutputContext) -> CliResult<()> {
+    if !is_cargo_installed(crate_name) {
+        return Err(CliError::NotCargoInstalled {
+            name: crate_name.to_owned(),
+        });
+    }
+
+    let cargo_args = build_cargo_update_args(crate_name, args, ctx);
+
     if args.dry_run {
         let cmd_line = format!("cargo install {}", cargo_args.join(" "));
         render_ok_message(&format!("Dry run: {cmd_line}"), ctx);
         return Ok(());
     }
 
-    // -- spawn cargo install --force -----------------------------------------
     match ctx.format {
         OutputFormat::Human => {
             let status = Command::new("cargo")
@@ -55,7 +139,7 @@ pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()>
 
             if !status.success() {
                 return Err(CliError::CargoInstallFailed {
-                    name: crate_name,
+                    name: crate_name.to_owned(),
                     code: status.code().unwrap_or(1),
                 });
             }
@@ -75,13 +159,13 @@ pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()>
                 );
                 let view = CargoResultView {
                     ok: false,
-                    crate_name: &crate_name,
+                    crate_name,
                     cargo_output: Some(combined.trim()),
                     alias_created: None,
                 };
                 render_cargo_result(&view, ctx);
                 return Err(CliError::CargoInstallFailed {
-                    name: crate_name,
+                    name: crate_name.to_owned(),
                     code: output.status.code().unwrap_or(1),
                 });
             }
@@ -93,7 +177,7 @@ pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()>
             );
             let view = CargoResultView {
                 ok: true,
-                crate_name: &crate_name,
+                crate_name,
                 cargo_output: Some(combined.trim()),
                 alias_created: None,
             };
@@ -101,33 +185,32 @@ pub(crate) fn run_update(args: &UpdateArgs, ctx: OutputContext) -> CliResult<()>
         },
     }
 
-    // -- success output ------------------------------------------------------
     if ctx.format == OutputFormat::Human {
         let view = CargoResultView {
             ok: true,
-            crate_name: &crate_name,
+            crate_name,
             cargo_output: None,
             alias_created: None,
         };
         render_cargo_result(&view, ctx);
     }
 
-    // -- self-update hint ----------------------------------------------------
-    if is_self_update && !ctx.quiet {
-        eprintln!();
-        eprintln!(
-            "Note: libiot has been updated. Restart your shell or run \
-             `source` on your shell config to pick up any completion changes."
-        );
-    }
-
-    // -- regenerate completions ----------------------------------------------
-    if !args.no_update_completions {
-        crate::commands::completions::regenerate_existing_completions(ctx.verbose);
-    }
-
     Ok(())
 }
+
+/// Print a hint that the user should reload their shell after
+/// updating libiot itself.
+fn print_self_update_hint() {
+    eprintln!();
+    eprintln!(
+        "Note: libiot has been updated. Restart your shell or run \
+         `source` on your shell config to pick up any completion changes."
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Cargo arg building
+// ---------------------------------------------------------------------------
 
 /// Build the argument list for `cargo install --force`.
 fn build_cargo_update_args(crate_name: &str, args: &UpdateArgs, ctx: OutputContext) -> Vec<String> {
@@ -169,34 +252,61 @@ fn build_cargo_update_args(crate_name: &str, args: &UpdateArgs, ctx: OutputConte
     out
 }
 
+// ---------------------------------------------------------------------------
+// Cargo install metadata
+// ---------------------------------------------------------------------------
+
 /// Check whether a crate was installed via `cargo install` by reading
 /// `~/.cargo/.crates2.json`.
-///
-/// Returns `true` if the crate appears in the install metadata,
-/// `false` if the file is missing, unreadable, or doesn't list the
-/// crate.
 fn is_cargo_installed(crate_name: &str) -> bool {
+    installed_libiot_crate_names()
+        .iter()
+        .any(|name| name == crate_name)
+}
+
+/// List all cargo-installed crates whose name starts with `libiot`.
+///
+/// Returns crate names sorted alphabetically: `libiot` first (if
+/// present), then `libiot-*-cli` crates.
+fn list_installed_libiot_crates() -> Vec<String> {
+    installed_libiot_crate_names()
+}
+
+/// Read `~/.cargo/.crates2.json` and return all installed crate names
+/// that start with `libiot`.
+fn installed_libiot_crate_names() -> Vec<String> {
     let Some(path) = cargo_crates_json_path() else {
-        return false;
+        return Vec::new();
     };
 
     let Ok(contents) = fs::read_to_string(&path) else {
-        return false;
+        return Vec::new();
     };
 
-    let parsed: serde_json::Value = match serde_json::from_str(&contents) {
-        Ok(v) => v,
-        Err(_) => return false,
+    let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&contents) else {
+        return Vec::new();
     };
 
     let Some(installs) = parsed.get("installs").and_then(|v| v.as_object()) else {
-        return false;
+        return Vec::new();
     };
 
-    // Keys are formatted as "crate_name version (source)"
-    installs
+    let mut names: Vec<String> = installs
         .keys()
-        .any(|key| key.starts_with(&format!("{crate_name} ")))
+        .filter_map(|key| {
+            // Keys are "crate_name version (source)"
+            let crate_name = key.split(' ').next()?;
+            if crate_name == "libiot" || crate_name.starts_with("libiot-") {
+                Some(crate_name.to_owned())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    names.sort();
+    names.dedup();
+    names
 }
 
 /// Path to cargo's installed-crates metadata file.
