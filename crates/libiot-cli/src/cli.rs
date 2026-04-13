@@ -238,7 +238,7 @@ pub(crate) enum ListTarget {
 #[derive(clap::Args, Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub(crate) struct InstallArgs {
-    /// Short name (e.g. "rollease-automate-pulse-pro-hub").
+    /// Crate to install (e.g. "rollease-automate-pulse-pro-hub").
     pub name: String,
     /// Also create an alias after successful install.
     #[arg(long)]
@@ -292,7 +292,7 @@ pub(crate) struct InstallArgs {
 #[derive(clap::Args, Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub(crate) struct UninstallArgs {
-    /// Short name (e.g. "rollease-automate-pulse-pro-hub").
+    /// Installed CLI to remove (e.g. "rollease-automate-pulse-pro-hub").
     pub name: String,
     /// Control when colored output is used.
     #[arg(long)]

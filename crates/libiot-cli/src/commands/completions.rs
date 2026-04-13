@@ -569,7 +569,7 @@ fn fixup_zsh_completions(
         // unset alias <ALIAS_NAME> — configured aliases
         (":alias_name -- Alias name to remove", &alias_list),
         // uninstall <NAME> — CLIs + aliases
-        (":name -- Short name", &all_list),
+        (":name -- Installed CLI to remove", &all_list),
     ];
 
     let mut result = String::with_capacity(script.len());
