@@ -119,6 +119,39 @@ fn uninstall_name_offers_clis_not_aliases() {
 }
 
 // -----------------------------------------------------------------------
+// update: should only offer CLI names, not aliases
+// -----------------------------------------------------------------------
+
+/// `libiot update <TAB>` should suggest installed CLI names but NOT
+/// aliases. Update operates on cargo crate names, not aliases.
+///
+/// Written by Claude Code, reviewed by a human.
+#[test]
+fn update_name_offers_clis_not_aliases() {
+    let path_dir = tempfile::tempdir().expect("tempdir");
+    let config_dir = tempfile::tempdir().expect("tempdir");
+    create_fake_cli(path_dir.path(), "my-device");
+    set_alias(config_dir.path(), path_dir.path(), "my-device", "mydev");
+
+    let script = generate_zsh(config_dir.path(), path_dir.path());
+
+    for line in script.lines() {
+        if line.contains(":name -- CLI to update") {
+            assert!(
+                line.contains("my-device"),
+                "update should offer CLI name, got: {line}"
+            );
+            assert!(
+                !line.contains("mydev"),
+                "update should NOT offer alias name, got: {line}"
+            );
+            return;
+        }
+    }
+    panic!("did not find update name arg in completions script");
+}
+
+// -----------------------------------------------------------------------
 // set alias <CMD>: should only offer CLI names, not aliases
 // -----------------------------------------------------------------------
 

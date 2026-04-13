@@ -538,8 +538,9 @@ fn inject_completions_for_positional_args(
     set_possible_values(cmd, &["unset", "env-var"], "cmd_or_alias", &all_values);
     set_possible_values(cmd, &["get", "env-var"], "cmd_or_alias", &all_values);
     set_possible_values(cmd, &["list", "env-vars"], "cmd_or_alias", &all_values);
-    // uninstall operates on crate names, not aliases.
+    // uninstall and update operate on crate names, not aliases.
     set_possible_values(cmd, &["uninstall"], "name", &cli_values);
+    set_possible_values(cmd, &["update"], "name", &cli_values);
 
     // Alias-name lookups: only configured aliases.
     set_possible_values(cmd, &["get", "alias"], "alias_name", &alias_values);
@@ -655,9 +656,10 @@ fn fixup_zsh_completions(
         (":alias_name -- Alias name to look up", &alias_list),
         // unset alias <ALIAS_NAME> — configured aliases
         (":alias_name -- Alias name to remove", &alias_list),
-        // uninstall <NAME> — CLIs + aliases
-        // uninstall operates on crate names, not aliases.
+        // uninstall <NAME> — CLIs only (not aliases)
         (":name -- Installed CLI to remove", &cli_list),
+        // update <NAME> — CLIs only (not aliases)
+        (":name -- CLI to update", &cli_list),
     ];
 
     let mut result = String::with_capacity(script.len());
