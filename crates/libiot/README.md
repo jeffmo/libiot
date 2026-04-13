@@ -1,6 +1,6 @@
-# libiot-cli
+# libiot
 
-Unified CLI dispatcher for the [libiot](../../README.md) ecosystem.
+Unified CLI dispatcher for the [libiot](https://github.com/jeffmo/libiot) ecosystem.
 
 `libiot` discovers all installed `libiot-*` CLI binaries on `$PATH`
 and exposes them as subcommands — similar to how `git` dispatches to
@@ -12,7 +12,7 @@ wrappers.
 
 ```bash
 # Install the dispatcher
-cargo install libiot-cli
+cargo install libiot
 
 # Install a device CLI
 libiot install rollease-automate-pulse-pro-hub

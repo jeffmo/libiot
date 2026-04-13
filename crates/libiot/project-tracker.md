@@ -1,4 +1,4 @@
-# libiot-cli — Project Tracker
+# libiot — Project Tracker
 
 ## Status: v0.1.0 — Initial implementation
 

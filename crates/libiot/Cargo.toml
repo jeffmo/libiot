@@ -1,5 +1,5 @@
 [package]
-name        = "libiot-cli"
+name        = "libiot"
 version     = "0.1.0"
 description = "Unified CLI dispatcher for the libiot ecosystem"
 categories  = ["command-line-utilities", "hardware-support", "network-programming"]
