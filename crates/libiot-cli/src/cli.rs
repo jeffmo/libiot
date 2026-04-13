@@ -80,8 +80,12 @@ pub(crate) struct Cli {
     pub format: OutputFormat,
 
     /// Suppress all non-error output.
-    #[arg(long, short, global = true)]
+    #[arg(long, short = 'q', global = true)]
     pub quiet: bool,
+
+    /// Use verbose output.
+    #[arg(long, short, global = true)]
+    pub verbose: bool,
 
     /// The subcommand to execute.
     #[command(subcommand)]
@@ -264,9 +268,6 @@ pub(crate) struct InstallArgs {
     /// Build in debug mode (without optimizations).
     #[arg(long)]
     pub debug: bool,
-    /// Use verbose output.
-    #[arg(long, short)]
-    pub verbose: bool,
     /// Control when colored output is used.
     #[arg(long)]
     pub color: Option<String>,
@@ -309,9 +310,6 @@ pub(crate) struct UninstallArgs {
     /// Directory to uninstall packages from.
     #[arg(long)]
     pub root: Option<String>,
-    /// Use verbose output.
-    #[arg(long, short)]
-    pub verbose: bool,
     /// Skip regenerating shell completion files after uninstall.
     #[arg(long)]
     pub no_update_completions: bool,

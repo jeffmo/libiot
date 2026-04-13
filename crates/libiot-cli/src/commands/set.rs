@@ -72,7 +72,7 @@ fn set_alias(cmd: &str, alias_name: &str, overwrite: bool, ctx: OutputContext) -
 
     // 8. Regenerate completions in the background so the new alias
     //    appears in tab-completion immediately.
-    crate::commands::completions::regenerate_existing_completions(/* verbose = */ false);
+    crate::commands::completions::regenerate_existing_completions(ctx.verbose);
 
     Ok(())
 }

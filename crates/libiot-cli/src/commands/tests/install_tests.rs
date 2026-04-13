@@ -6,9 +6,27 @@ use crate::cli::InstallArgs;
 use crate::commands::install::build_cargo_install_args;
 use crate::commands::install::create_post_install_alias_from;
 use crate::error::CliError;
+use crate::output::OutputContext;
+use crate::output::OutputFormat;
 use crate::settings::Settings;
 use crate::settings::load_settings_from;
 use crate::settings::save_settings_to;
+
+fn quiet_ctx() -> OutputContext {
+    OutputContext {
+        format: OutputFormat::Human,
+        quiet: true,
+        verbose: false,
+    }
+}
+
+fn verbose_ctx() -> OutputContext {
+    OutputContext {
+        format: OutputFormat::Human,
+        quiet: false,
+        verbose: true,
+    }
+}
 
 /// Build default [`InstallArgs`] with only the `name` field populated.
 fn default_args(name: &str) -> InstallArgs {
@@ -22,7 +40,6 @@ fn default_args(name: &str) -> InstallArgs {
         force: false,
         dry_run: false,
         debug: false,
-        verbose: false,
         color: None,
         jobs: None,
         quiet: false,
@@ -50,7 +67,12 @@ fn write_settings(settings: &Settings) -> (tempfile::TempDir, std::path::PathBuf
 #[test]
 fn build_args_minimal() {
     let args = default_args("foo");
-    let result = build_cargo_install_args("libiot-foo-cli", &args, false);
+    let ctx = OutputContext {
+        format: OutputFormat::Human,
+        quiet: false,
+        verbose: false,
+    };
+    let result = build_cargo_install_args("libiot-foo-cli", &args, ctx);
     assert_eq!(result, vec!["libiot-foo-cli"]);
 }
 
@@ -69,14 +91,13 @@ fn build_args_all_flags() {
         force: true,
         dry_run: false,
         debug: true,
-        verbose: true,
         color: Some("always".to_owned()),
         jobs: Some(4),
         quiet: true,
         root: Some("/usr/local".to_owned()),
         no_update_completions: true,
     };
-    let result = build_cargo_install_args("libiot-test-cli", &args, false);
+    let result = build_cargo_install_args("libiot-test-cli", &args, verbose_ctx());
     assert_eq!(
         result,
         vec![
@@ -108,7 +129,7 @@ fn build_args_all_flags() {
 #[test]
 fn build_args_ctx_quiet_adds_quiet() {
     let args = default_args("foo");
-    let result = build_cargo_install_args("libiot-foo-cli", &args, true);
+    let result = build_cargo_install_args("libiot-foo-cli", &args, quiet_ctx());
     assert!(result.contains(&"--quiet".to_owned()));
 }
 
@@ -120,7 +141,7 @@ fn build_args_ctx_quiet_adds_quiet() {
 fn build_args_quiet_not_duplicated() {
     let mut args = default_args("foo");
     args.quiet = true;
-    let result = build_cargo_install_args("libiot-foo-cli", &args, true);
+    let result = build_cargo_install_args("libiot-foo-cli", &args, quiet_ctx());
     let quiet_count = result.iter().filter(|a| a.as_str() == "--quiet").count();
     assert_eq!(quiet_count, 1, "expected exactly one --quiet flag");
 }
@@ -132,7 +153,12 @@ fn build_args_quiet_not_duplicated() {
 fn build_args_jobs_forwarded() {
     let mut args = default_args("foo");
     args.jobs = Some(8);
-    let result = build_cargo_install_args("libiot-foo-cli", &args, false);
+    let ctx = OutputContext {
+        format: OutputFormat::Human,
+        quiet: false,
+        verbose: false,
+    };
+    let result = build_cargo_install_args("libiot-foo-cli", &args, ctx);
     let jobs_idx = result.iter().position(|a| a == "--jobs").unwrap();
     assert_eq!(result[jobs_idx + 1], "8");
 }
@@ -147,16 +173,10 @@ fn build_args_jobs_forwarded() {
 #[test]
 fn dry_run_returns_ok() {
     use crate::commands::install::run_install;
-    use crate::output::OutputContext;
-    use crate::output::OutputFormat;
 
     let mut args = default_args("nonexistent-device");
     args.dry_run = true;
-    let ctx = OutputContext {
-        format: OutputFormat::Human,
-        quiet: true,
-    };
-    let result = run_install(&args, ctx);
+    let result = run_install(&args, quiet_ctx());
     assert!(result.is_ok(), "expected Ok for dry run, got {result:?}");
 }
 

@@ -7,7 +7,25 @@ use std::collections::BTreeMap;
 use crate::cli::UninstallArgs;
 use crate::commands::uninstall::build_cargo_uninstall_args;
 use crate::commands::uninstall::cleanup_after_uninstall;
+use crate::output::OutputContext;
+use crate::output::OutputFormat;
 use crate::settings::Settings;
+
+fn default_ctx() -> OutputContext {
+    OutputContext {
+        format: OutputFormat::Human,
+        quiet: false,
+        verbose: false,
+    }
+}
+
+fn verbose_ctx() -> OutputContext {
+    OutputContext {
+        format: OutputFormat::Human,
+        quiet: false,
+        verbose: true,
+    }
+}
 
 /// Build default [`UninstallArgs`] with only the `name` field populated.
 fn default_args(name: &str) -> UninstallArgs {
@@ -18,7 +36,6 @@ fn default_args(name: &str) -> UninstallArgs {
         remove_aliases: false,
         remove_env_vars: false,
         root: None,
-        verbose: false,
         no_update_completions: true,
     }
 }
@@ -72,7 +89,7 @@ fn sample_settings() -> Settings {
 #[test]
 fn build_args_minimal() {
     let args = default_args("foo");
-    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, false);
+    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, default_ctx());
     assert_eq!(result, vec!["libiot-foo-cli"]);
 }
 
@@ -88,10 +105,9 @@ fn build_args_all_flags() {
         remove_aliases: false,
         remove_env_vars: false,
         root: Some("/usr/local".to_owned()),
-        verbose: true,
         no_update_completions: true,
     };
-    let result = build_cargo_uninstall_args("libiot-test-cli", &args, false);
+    let result = build_cargo_uninstall_args("libiot-test-cli", &args, verbose_ctx());
     assert_eq!(
         result,
         vec![
@@ -112,11 +128,16 @@ fn build_args_all_flags() {
 #[test]
 fn build_args_ctx_quiet_adds_quiet() {
     let args = default_args("foo");
-    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, true);
+    let ctx = OutputContext {
+        format: OutputFormat::Human,
+        quiet: true,
+        verbose: false,
+    };
+    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, ctx);
     assert!(result.contains(&"--quiet".to_owned()));
 }
 
-/// When both `args.quiet` and `ctx_quiet` are true, `--quiet` appears
+/// When both `args.quiet` and `ctx.quiet` are true, `--quiet` appears
 /// exactly once.
 ///
 /// Written by Claude Code, reviewed by a human.
@@ -124,7 +145,12 @@ fn build_args_ctx_quiet_adds_quiet() {
 fn build_args_quiet_not_duplicated() {
     let mut args = default_args("foo");
     args.quiet = true;
-    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, true);
+    let ctx = OutputContext {
+        format: OutputFormat::Human,
+        quiet: true,
+        verbose: false,
+    };
+    let result = build_cargo_uninstall_args("libiot-foo-cli", &args, ctx);
     let quiet_count = result.iter().filter(|a| a.as_str() == "--quiet").count();
     assert_eq!(quiet_count, 1, "expected exactly one --quiet flag");
 }

@@ -53,14 +53,17 @@ impl fmt::Display for OutputFormat {
 // OutputContext
 // ---------------------------------------------------------------------------
 
-/// Bundles the output format with the `--quiet` flag so that every
-/// render function can make both decisions from a single argument.
+/// Bundles the output format with the `--quiet` and `--verbose` flags
+/// so that every render function can make all decisions from a single
+/// argument.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct OutputContext {
     /// The output format requested by the user.
     pub format: OutputFormat,
     /// When `true`, success output is suppressed entirely.
     pub quiet: bool,
+    /// When `true`, extra diagnostic output is enabled.
+    pub verbose: bool,
 }
 
 // ---------------------------------------------------------------------------

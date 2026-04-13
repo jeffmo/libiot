@@ -16,6 +16,7 @@ fn quiet_ctx() -> OutputContext {
     OutputContext {
         format: OutputFormat::Human,
         quiet: true,
+        verbose: false,
     }
 }
 

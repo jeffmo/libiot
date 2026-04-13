@@ -22,7 +22,7 @@ use crate::settings::save_settings;
 pub(crate) fn build_cargo_uninstall_args(
     crate_name: &str,
     args: &UninstallArgs,
-    ctx_quiet: bool,
+    ctx: OutputContext,
 ) -> Vec<String> {
     let mut out = vec![crate_name.to_owned()];
 
@@ -30,10 +30,10 @@ pub(crate) fn build_cargo_uninstall_args(
         out.push("--root".to_owned());
         out.push(root.clone());
     }
-    if args.verbose {
+    if ctx.verbose {
         out.push("--verbose".to_owned());
     }
-    if args.quiet || ctx_quiet {
+    if args.quiet || ctx.quiet {
         out.push("--quiet".to_owned());
     }
     if let Some(ref color) = args.color {
@@ -51,7 +51,7 @@ pub(crate) fn build_cargo_uninstall_args(
 pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResult<()> {
     let short_name = normalize_crate_name(&args.name);
     let crate_name = format!("libiot-{short_name}-cli");
-    let cargo_args = build_cargo_uninstall_args(&crate_name, args, ctx.quiet);
+    let cargo_args = build_cargo_uninstall_args(&crate_name, args, ctx);
 
     // -- spawn cargo uninstall -------------------------------------------
     match ctx.format {
@@ -134,7 +134,7 @@ pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResu
 
     // -- regenerate completions ---------------------------------------------
     if !args.no_update_completions {
-        crate::commands::completions::regenerate_existing_completions(args.verbose);
+        crate::commands::completions::regenerate_existing_completions(ctx.verbose);
     }
 
     Ok(())

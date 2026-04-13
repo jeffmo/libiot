@@ -26,6 +26,7 @@ pub(crate) fn run(cli: Cli) -> CliResult<()> {
     let ctx = OutputContext {
         format: cli.format,
         quiet: cli.quiet,
+        verbose: cli.verbose,
     };
     match cli.command {
         Command::Set { target } => set::run_set(target, ctx),

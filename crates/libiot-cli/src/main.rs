@@ -63,6 +63,7 @@ fn main() {
                 let ctx = OutputContext {
                     format: cli.format,
                     quiet: cli.quiet,
+                    verbose: cli.verbose,
                 };
                 if let Err(err) = commands::run(cli) {
                     report_error(&err, ctx.format);
