@@ -69,6 +69,11 @@ fn set_alias(cmd: &str, alias_name: &str, overwrite: bool, ctx: OutputContext) -
 
     // 7. Render.
     render_ok_message(&format!("Alias {alias_name:?} set for {cmd:?}."), ctx);
+
+    // 8. Regenerate completions in the background so the new alias
+    //    appears in tab-completion immediately.
+    crate::commands::completions::regenerate_existing_completions(/* verbose = */ false);
+
     Ok(())
 }
 

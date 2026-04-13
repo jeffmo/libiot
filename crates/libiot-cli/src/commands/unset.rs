@@ -36,6 +36,11 @@ fn unset_alias(alias_name: &str, ctx: OutputContext) -> CliResult<()> {
     save_settings(&settings)?;
 
     render_ok_message(&format!("Alias {alias_name:?} removed."), ctx);
+
+    // Regenerate completions in the background so the removed alias
+    // disappears from tab-completion immediately.
+    crate::commands::completions::regenerate_existing_completions(/* verbose = */ false);
+
     Ok(())
 }
 
