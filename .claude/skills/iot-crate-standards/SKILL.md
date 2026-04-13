@@ -284,3 +284,36 @@ users see in tab-completion menus.
 Code review (`/review-rust-api`) explicitly checks: does the `-cli`
 crate have a concise `about` string that would read well as a
 one-line completion description?
+
+## 17. CLI crate completion contract
+
+Every `-cli` crate must expose a `completions` hidden subcommand
+that follows these conventions so that the `libiot` dispatcher can
+delegate tab-completion to sub-CLIs:
+
+- **Hidden subcommand**: `#[command(hide = true)] Completions { .. }`
+  with an optional `shell: Option<clap_complete::Shell>` positional
+  arg and a `--print-config` flag.
+- **File-based output**: `completions <SHELL>` writes the completion
+  script to `~/.config/libiot/completions/<binary-name>/<shell>`
+  (respecting `LIBIOT_CONFIG_DIR`), then prints a source snippet.
+- **Binary name**: The `clap_complete::generate` call must use the
+  exact binary name (e.g. `"libiot-rollease-automate-pulse-pro-hub"`).
+  The `libiot` dispatcher sources the generated file and delegates to
+  the zsh function `_<binary-name>`.
+- **No-arg instructions**: Running `completions` without a shell
+  argument prints setup instructions.
+- **`--print-config`**: Prints only the source snippet for piping.
+
+The `libiot` dispatcher relies on these conventions:
+1. It looks for completion files at
+   `~/.config/libiot/completions/libiot-<name>/zsh` for each
+   discovered CLI.
+2. If found, it sources the file at the top of its own completion
+   script and replaces the subcommand handler with delegation to
+   the `_libiot-<name>` function.
+3. This makes `libiot <name> <TAB>` work identically to
+   `libiot-<name> <TAB>`.
+
+When adding a new `-cli` crate, run both `<binary> completions zsh`
+and `libiot completions zsh` to set up the delegation chain.

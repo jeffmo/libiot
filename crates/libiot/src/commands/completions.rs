@@ -6,6 +6,7 @@
 //! `~/.config/libiot/completions/<shell>` and a short source snippet
 //! is printed for the user to append to their shell configuration.
 
+use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
 
@@ -415,6 +416,7 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
 
     if shell == clap_complete::Shell::Zsh {
         output = fixup_zsh_completions(output, &discovered_names, &alias_names, &all_names);
+        output = inject_zsh_subcli_delegation(output, &discovered);
     }
 
     output
@@ -599,6 +601,123 @@ fn fixup_zsh_completions(
             result.push_str(line);
             result.push('\n');
         }
+    }
+
+    result
+}
+
+/// Post-process a zsh completion script to delegate discovered CLI
+/// subcommands to their own completion functions.
+///
+/// For each discovered CLI that has a completion file at
+/// `~/.config/libiot/completions/<binary>/<shell>`:
+///
+/// 1. Prepend a `source` line at the top so the sub-CLI's completion
+///    function is loaded.
+/// 2. Replace the subcommand's case handler with delegation code that
+///    shifts `words[1]` and calls the sub-CLI's function.
+///
+/// This makes `libiot <subcli> <TAB>` work identically to
+/// `<subcli> <TAB>`.
+fn inject_zsh_subcli_delegation(
+    script: String,
+    discovered: &[crate::discovery::DiscoveredCli],
+) -> String {
+    let comp_base = match config_dir() {
+        Ok(d) => d.join("completions"),
+        Err(_) => return script,
+    };
+
+    // Collect CLIs that have a zsh completion file on disk.
+    let mut delegations: Vec<(&str, std::path::PathBuf)> = Vec::new();
+    for cli in discovered {
+        let binary_name = format!("libiot-{}", cli.name);
+        let comp_file = comp_base.join(&binary_name).join("zsh");
+        if comp_file.is_file() {
+            delegations.push((&cli.name, comp_file));
+        }
+    }
+
+    if delegations.is_empty() {
+        return script;
+    }
+
+    // Build source lines to prepend.
+    let mut source_lines = String::new();
+    for (_, comp_file) in &delegations {
+        let path = comp_file.display();
+        let _ = writeln!(
+            source_lines,
+            "# Source sub-CLI completions\n\
+             [[ -f \"{path}\" ]] && source \"{path}\""
+        );
+    }
+
+    // Build a set of subcommand names to replace.
+    let delegation_names: std::collections::BTreeSet<&str> =
+        delegations.iter().map(|(name, _)| *name).collect();
+
+    // Replace case handlers for delegated subcommands.
+    //
+    // We look for patterns like:
+    //   (rollease-automate-pulse-pro-hub)
+    //   _arguments ... \
+    //   ... \
+    //   && ret=0
+    //   ;;
+    //
+    // And replace them with:
+    //   (rollease-automate-pulse-pro-hub)
+    //   words[1]="libiot-rollease-automate-pulse-pro-hub"
+    //   _libiot-rollease-automate-pulse-pro-hub
+    //   ;;
+    let mut result = String::with_capacity(script.len() + source_lines.len());
+    let lines: Vec<&str> = script.lines().collect();
+    let mut i = 0;
+
+    // Insert source lines after the first line (#compdef ...)
+    if !lines.is_empty() {
+        result.push_str(lines[0]);
+        result.push('\n');
+        result.push_str(&source_lines);
+        i = 1;
+    }
+
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim();
+
+        // Check if this is a case label for a delegated CLI.
+        if trimmed.starts_with('(') && trimmed.ends_with(')') {
+            let name = &trimmed[1..trimmed.len() - 1];
+            if delegation_names.contains(name) {
+                let binary_name = format!("libiot-{name}");
+                // Emit the delegation handler.
+                result.push_str(line);
+                result.push('\n');
+                let _ = write!(
+                    result,
+                    "words[1]=\"{binary_name}\"\n\
+                     _{binary_name}\n"
+                );
+                // Skip the original handler body until `;;`.
+                i += 1;
+                while i < lines.len() && lines[i].trim() != ";;" {
+                    i += 1;
+                }
+                // Emit the `;;`.
+                if i < lines.len() {
+                    result.push_str(lines[i]);
+                    result.push('\n');
+                }
+                i += 1;
+                continue;
+            }
+        }
+
+        result.push_str(line);
+        result.push('\n');
+        i += 1;
     }
 
     result
