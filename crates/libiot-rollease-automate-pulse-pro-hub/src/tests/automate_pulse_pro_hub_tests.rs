@@ -238,6 +238,14 @@ async fn snapshot_matches_real_hub_capture_from_spec() {
             .unwrap();
         socket.flush().await.unwrap();
 
+        // Batch 3: per-motor voltage queries.
+        expect_bytes(&mut socket, b"!4JKpVc?;!MWXpVc?;!3YCpVc?;").await;
+        socket
+            .write_all(b"!4JKpVc01208,R58;!MWXpVc00985,R4C;!3YCpVc01150,R4C;")
+            .await
+            .unwrap();
+        socket.flush().await.unwrap();
+
         let _ = socket.shutdown().await;
     });
 
@@ -248,26 +256,33 @@ async fn snapshot_matches_real_hub_capture_from_spec() {
     assert_eq!(info.hub_serial, "2016197");
     assert_eq!(info.motors.len(), 3, "hub gateway should be filtered");
 
-    // Motor 0 — 4JK "John House", 0% closed, DC motor.
+    // Motor 0 — 4JK "John House", 0% closed, DC motor, 12.08 V.
     let m0 = &info.motors[0];
     assert_eq!(m0.address, MotorAddress::new("4JK").unwrap());
     assert_eq!(m0.name.as_deref(), Some("John House"));
     assert_eq!(m0.version.motor_type, MotorType::Dc);
     let p0 = m0.position.expect("4JK should have a position");
     assert_eq!(p0.closed_percent, 0);
+    let v0 = m0.voltage.expect("4JK should have a voltage");
+    assert_eq!(v0.centivolts, 1208);
+    assert_eq!(v0.signal, 0x58);
 
-    // Motor 1 — MWX "Dining Room", 100% closed, tilt 180.
+    // Motor 1 — MWX "Dining Room", 100% closed, tilt 180, 9.85 V.
     let m1 = &info.motors[1];
     assert_eq!(m1.address, MotorAddress::new("MWX").unwrap());
     assert_eq!(m1.name.as_deref(), Some("Dining Room"));
     let p1 = m1.position.expect("MWX should have a position");
     assert_eq!(p1.closed_percent, 100);
     assert_eq!(p1.tilt_percent, 180);
+    let v1 = m1.voltage.expect("MWX should have a voltage");
+    assert_eq!(v1.centivolts, 985);
 
-    // Motor 2 — 3YC "Kitchen", 0% closed.
+    // Motor 2 — 3YC "Kitchen", 0% closed, 11.50 V.
     let m2 = &info.motors[2];
     assert_eq!(m2.address, MotorAddress::new("3YC").unwrap());
     assert_eq!(m2.name.as_deref(), Some("Kitchen"));
+    let v2 = m2.voltage.expect("3YC should have a voltage");
+    assert_eq!(v2.centivolts, 1150);
 
     // Read timeout is generous (3s + 3s = 6s) so the test should complete
     // well under that window. Bump this if it starts flaking.

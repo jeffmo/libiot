@@ -4,12 +4,10 @@ use crate::motor::Motor;
 
 /// Current state of the hub and all its paired motors.
 ///
-/// Assembled by [`crate::AutomatePulseProHub::info`] using the
-/// one-shot batch-query pattern documented in §3.1 of the in-crate
-/// `PULSE_PRO_LOCAL_API.md`: a single TCP write containing the hub
-/// name, hub serial, version enumeration, and position enumeration
-/// queries, followed by a second batched write for per-motor friendly
-/// names.
+/// Assembled by [`crate::AutomatePulseProHub::info`] using a
+/// three-batch query pattern: (1) hub name, hub serial, version
+/// enumeration, and position enumeration; (2) per-motor friendly
+/// names; (3) per-motor battery voltage.
 ///
 /// Motors that were enumerated but did not respond to the position
 /// query (because they are offline or out of RF range) are still

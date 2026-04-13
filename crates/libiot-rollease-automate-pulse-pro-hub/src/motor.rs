@@ -3,6 +3,7 @@
 use crate::motor_address::MotorAddress;
 use crate::motor_position::MotorPosition;
 use crate::motor_version::MotorVersion;
+use crate::motor_voltage::MotorVoltage;
 
 /// Aggregated description of one paired motor, as assembled by
 /// [`crate::AutomatePulseProHub::info`] or
@@ -37,4 +38,9 @@ pub struct Motor {
     /// discovered but did not reply to the position query (typically
     /// offline or out of range).
     pub position: Option<MotorPosition>,
+
+    /// The motor's battery voltage. `None` means the motor did not reply
+    /// to the voltage query (typically offline, out of range, or an AC
+    /// motor that does not report battery level).
+    pub voltage: Option<MotorVoltage>,
 }

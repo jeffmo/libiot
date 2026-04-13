@@ -186,14 +186,15 @@ impl AutomatePulseProHub {
     }
 
     /// Query full hub info — name, serial, and every paired motor — in
-    /// one batched round-trip.
+    /// three batched round-trips.
     ///
-    /// Sends a single concatenated write containing the hub name, hub
-    /// serial, version enumeration, and position enumeration queries.
-    /// Then sends a second batched write of per-motor name queries.
-    /// Returns a [`HubInfo`] with every paired motor (hub gateway
-    /// filtered out), each populated with name, version, and position
-    /// if the hub responded with one.
+    /// Batch 1: hub name, hub serial, version enumeration, position
+    /// enumeration. Batch 2: per-motor friendly name queries. Batch 3:
+    /// per-motor battery voltage queries. Returns a [`HubInfo`] with
+    /// every paired motor (hub gateway filtered out), each populated
+    /// with name, version, position, and voltage where the motor
+    /// responded.
+    #[allow(clippy::too_many_lines)]
     pub async fn info(&self) -> Result<HubInfo> {
         // First batch: hub name + hub serial + version enum + position enum.
         let mut batch1 = Vec::new();
@@ -264,6 +265,30 @@ impl AutomatePulseProHub {
                 .collect()
         };
 
+        // Third batch: per-motor voltage queries.
+        let motor_voltages: Vec<(MotorAddress, MotorVoltage)> = if motor_addresses.is_empty() {
+            Vec::new()
+        } else {
+            let mut batch3 = Vec::new();
+            for addr in &motor_addresses {
+                batch3.extend_from_slice(&encode_query_motor_voltage(addr));
+            }
+
+            let voltage_frames = {
+                let mut inner = self.inner.lock().await;
+                inner.write_frames(&batch3).await?;
+                inner.read_for(BROADCAST_COLLECT_WINDOW).await?
+            };
+
+            voltage_frames
+                .into_iter()
+                .filter_map(|frame| match frame {
+                    IncomingFrame::MotorVoltageRec { addr, voltage } => Some((addr, voltage)),
+                    _ => None,
+                })
+                .collect()
+        };
+
         // Stitch together the final `Motor` list in the order the hub
         // reported the version records.
         let motors = motor_addresses
@@ -278,6 +303,10 @@ impl AutomatePulseProHub {
                     .iter()
                     .find(|(a, _)| a == addr)
                     .map(|(_, n)| n.clone());
+                let voltage = motor_voltages
+                    .iter()
+                    .find(|(a, _)| a == addr)
+                    .map(|(_, v)| *v);
                 Some(Motor {
                     address: *addr,
                     name,
@@ -287,6 +316,7 @@ impl AutomatePulseProHub {
                         version: version.clone(),
                     },
                     position,
+                    voltage,
                 })
             })
             .collect();

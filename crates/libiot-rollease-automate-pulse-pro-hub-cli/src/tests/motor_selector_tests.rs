@@ -32,6 +32,7 @@ fn test_hub_info() -> HubInfo {
                     version: "22".to_owned(),
                 },
                 position: None,
+                voltage: None,
             },
             Motor {
                 address: addr("MWX"),
@@ -42,6 +43,7 @@ fn test_hub_info() -> HubInfo {
                     version: "22".to_owned(),
                 },
                 position: None,
+                voltage: None,
             },
             Motor {
                 address: addr("3YC"),
@@ -52,6 +54,7 @@ fn test_hub_info() -> HubInfo {
                     version: "22".to_owned(),
                 },
                 position: None,
+                voltage: None,
             },
         ],
     }
@@ -185,6 +188,7 @@ fn resolve_skips_unnamed_motors_during_matching_but_lists_them_in_candidates() {
                 version: "22".to_owned(),
             },
             position: None,
+            voltage: None,
         }],
     };
     let err = resolve_against_hub_info("kitchen", &info).unwrap_err();
