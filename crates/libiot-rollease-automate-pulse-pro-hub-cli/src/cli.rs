@@ -128,11 +128,14 @@ pub(crate) enum Command {
     },
 
     // -- shell completions (hidden) -----------------------------------
-    /// Generate shell completions to stdout.
+    /// Generate shell completions.
     #[command(hide = true)]
     Completions {
-        /// Target shell.
-        shell: clap_complete::Shell,
+        /// Target shell (omit for setup instructions).
+        shell: Option<clap_complete::Shell>,
+        /// Print only the source snippet (for piping to shell config).
+        #[arg(long)]
+        print_config: bool,
     },
 
     /// Write a man page to a file.

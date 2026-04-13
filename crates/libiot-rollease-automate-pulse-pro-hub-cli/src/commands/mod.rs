@@ -23,8 +23,11 @@ pub(crate) async fn run(cli: Cli) -> CliResult<()> {
 
     match cli.command {
         // Shell completions and man pages don't need a hub connection.
-        Command::Completions { shell } => {
-            completions::run_completions(shell);
+        Command::Completions {
+            shell,
+            print_config,
+        } => {
+            completions::run_completions(shell, print_config);
             return Ok(());
         },
         Command::Man { path } => {
