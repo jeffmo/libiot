@@ -1,6 +1,6 @@
 [package]
 name        = "libiot"
-version     = "0.2.0"
+version     = "0.3.0"
 description = "Unified CLI dispatcher for the libiot ecosystem"
 categories  = ["command-line-utilities", "hardware-support", "network-programming"]
 keywords    = ["libiot", "iot", "cli", "dispatcher"]

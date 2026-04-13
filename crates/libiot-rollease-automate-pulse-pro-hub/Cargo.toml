@@ -1,6 +1,6 @@
 [package]
 name        = "libiot-rollease-automate-pulse-pro-hub"
-version     = "0.1.0"
+version     = "0.2.0"
 description = "Async Rust client for the Rollease Acmeda Automate Pulse Pro shade hub LAN ASCII protocol"
 categories  = ["api-bindings", "hardware-support", "network-programming"]
 keywords    = ["libiot", "iot", "rollease", "shades", "pulsepro"]
