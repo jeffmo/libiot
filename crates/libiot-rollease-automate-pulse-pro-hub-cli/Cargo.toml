@@ -1,6 +1,6 @@
 [package]
 name        = "libiot-rollease-automate-pulse-pro-hub-cli"
-version     = "0.2.0"
+version     = "0.3.0"
 description = "Command-line interface for the Rollease Acmeda Automate Pulse Pro shade hub"
 categories  = ["command-line-utilities", "hardware-support", "network-programming"]
 keywords    = ["libiot", "iot", "rollease", "shades", "pulsepro"]
@@ -30,7 +30,7 @@ default = []
 dangerous-ops = ["libiot-rollease-automate-pulse-pro-hub/dangerous-ops"]
 
 [dependencies]
-libiot-rollease-automate-pulse-pro-hub = { path = "../libiot-rollease-automate-pulse-pro-hub", version = "0.2.0" }
+libiot-rollease-automate-pulse-pro-hub = { path = "../libiot-rollease-automate-pulse-pro-hub", version = "0.3.0" }
 clap          = { workspace = true }
 clap_complete = { workspace = true }
 clap_mangen   = { workspace = true }
