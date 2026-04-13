@@ -425,29 +425,21 @@ fn inject_completions_for_positional_args(
         .map(|n| clap::builder::PossibleValue::new(leak_str(n)))
         .collect();
 
-    // set alias <CMD> — complete to discovered CLIs
+    // Everywhere a CMD or CMD_OR_ALIAS is expected, offer CLIs + aliases.
+    // Aliases are valid targets because they resolve to CLIs at runtime.
+    //
+    // Exception: `set alias <CMD>` only offers CLIs — we don't support
+    // aliases-of-aliases.
     set_possible_values(cmd, &["set", "alias"], "cmd", &cli_values);
-
-    // set env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
     set_possible_values(cmd, &["set", "env-var"], "cmd_or_alias", &all_values);
-
-    // unset alias <ALIAS_NAME> — complete to aliases
-    set_possible_values(cmd, &["unset", "alias"], "alias_name", &alias_values);
-
-    // unset env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
     set_possible_values(cmd, &["unset", "env-var"], "cmd_or_alias", &all_values);
-
-    // get alias <ALIAS_NAME> — complete to aliases
-    set_possible_values(cmd, &["get", "alias"], "alias_name", &alias_values);
-
-    // get env-var <CMD_OR_ALIAS> — complete to CLIs + aliases
     set_possible_values(cmd, &["get", "env-var"], "cmd_or_alias", &all_values);
-
-    // list env-vars <CMD_OR_ALIAS> — complete to CLIs + aliases
     set_possible_values(cmd, &["list", "env-vars"], "cmd_or_alias", &all_values);
+    set_possible_values(cmd, &["uninstall"], "name", &all_values);
 
-    // uninstall <NAME> — complete to discovered CLIs
-    set_possible_values(cmd, &["uninstall"], "name", &cli_values);
+    // Alias-name lookups: only configured aliases.
+    set_possible_values(cmd, &["get", "alias"], "alias_name", &alias_values);
+    set_possible_values(cmd, &["unset", "alias"], "alias_name", &alias_values);
 }
 
 /// Walk into `cmd` following the subcommand `path`, then replace the
@@ -534,8 +526,8 @@ fn fixup_zsh_completions(
         (":alias_name -- Alias name to look up", &alias_list),
         // unset alias <ALIAS_NAME> — configured aliases
         (":alias_name -- Alias name to remove", &alias_list),
-        // uninstall <NAME> — discovered CLIs
-        (":name -- Short name", &cli_list),
+        // uninstall <NAME> — CLIs + aliases
+        (":name -- Short name", &all_list),
     ];
 
     let mut result = String::with_capacity(script.len());
