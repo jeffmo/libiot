@@ -304,7 +304,7 @@ checksum = "48f5d2a454e16a5ea0f4ced81bd44e4cfc7bd3a507b61887c99fd3538b28e4af"
 
 [[package]]
 name = "libiot"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "libiot-rollease-automate-pulse-pro-hub"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "thiserror",
  "tokio",
@@ -326,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "libiot-rollease-automate-pulse-pro-hub-cli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "assert_cmd",
  "clap",
