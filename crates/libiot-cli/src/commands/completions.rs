@@ -378,12 +378,29 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
         }
     }
 
-    // -- add possible_values to positional args so tab-completion works ------
-    inject_completions_for_positional_args(&mut cmd, &discovered_names, &alias_names, &all_names);
+    // For shells other than zsh, inject possible_values on the clap
+    // args directly. For zsh, clap_complete reorders positional args
+    // when their value parsers differ, breaking the arg order. So for
+    // zsh we generate with the original parsers (preserving order) and
+    // post-process the output to replace `:_default` with the values.
+    if shell != clap_complete::Shell::Zsh {
+        inject_completions_for_positional_args(
+            &mut cmd,
+            &discovered_names,
+            &alias_names,
+            &all_names,
+        );
+    }
 
     let mut buf: Vec<u8> = Vec::new();
     clap_complete::generate(shell, &mut cmd, "libiot", &mut buf);
-    String::from_utf8_lossy(&buf).into_owned()
+    let mut output = String::from_utf8_lossy(&buf).into_owned();
+
+    if shell == clap_complete::Shell::Zsh {
+        output = fixup_zsh_completions(output, &discovered_names, &alias_names, &all_names);
+    }
+
+    output
 }
 
 /// Walk the clap `Command` tree and set `possible_values` on positional
@@ -469,4 +486,84 @@ fn set_possible_values(
 /// after, so the leak is harmless.
 fn leak_str(s: &str) -> &'static str {
     Box::leak(s.to_owned().into_boxed_str())
+}
+
+/// Post-process generated zsh completions to inject dynamic value
+/// lists on positional arguments.
+///
+/// `clap_complete`'s zsh generator reorders positional arguments when
+/// their value parsers differ (args with explicit values sort after
+/// args with `_default`). This breaks the declared arg order. Instead
+/// of fighting the generator, we generate with default parsers
+/// (preserving order) and then replace `:_default` with `:(v1 v2 ...)`
+/// on the specific arg lines that need dynamic values.
+fn fixup_zsh_completions(
+    script: String,
+    cli_names: &std::collections::BTreeSet<String>,
+    alias_names: &std::collections::BTreeSet<String>,
+    all_names: &[&str],
+) -> String {
+    if cli_names.is_empty() && alias_names.is_empty() {
+        return script;
+    }
+
+    let cli_list = format!(
+        "({})",
+        cli_names.iter().cloned().collect::<Vec<_>>().join(" ")
+    );
+    let alias_list = format!(
+        "({})",
+        alias_names.iter().cloned().collect::<Vec<_>>().join(" ")
+    );
+    let all_list = format!("({})", all_names.join(" "));
+
+    // Each replacement target uses the arg name + description text
+    // (from the clap #[arg] doc comment) to match a specific zsh line.
+    // We use enough of the description to uniquely identify each arg
+    // — this avoids replacing `set alias`'s alias_name (which is a
+    // free-form name the user invents) when we only want to replace
+    // `get alias` / `unset alias`'s alias_name (existing aliases).
+    let replacements: &[(&str, &str)] = &[
+        // set alias <CMD> — discovered CLIs
+        (":cmd -- Target command name", &cli_list),
+        // set env-var / unset env-var / get env-var / list env-vars
+        (":cmd_or_alias -- Command or alias name", &all_list),
+        // list env-vars optional filter
+        (":cmd_or_alias -- Optionally filter", &all_list),
+        // get alias <ALIAS_NAME> — configured aliases
+        (":alias_name -- Alias name to look up", &alias_list),
+        // unset alias <ALIAS_NAME> — configured aliases
+        (":alias_name -- Alias name to remove", &alias_list),
+        // uninstall <NAME> — discovered CLIs
+        (":name -- Short name", &cli_list),
+    ];
+
+    let mut result = String::with_capacity(script.len());
+    for line in script.lines() {
+        let mut replaced = false;
+        for &(arg_marker, values) in replacements {
+            if line.contains(arg_marker) && line.ends_with(":_default' \\") {
+                // Replace `:_default` with `:(values)`
+                let new_line = line.replace(":_default", &format!(":{values}"));
+                result.push_str(&new_line);
+                result.push('\n');
+                replaced = true;
+                break;
+            }
+            // Also handle lines that end with `:_default'` (no trailing ` \`)
+            if line.contains(arg_marker) && line.ends_with(":_default'") {
+                let new_line = line.replace(":_default", &format!(":{values}"));
+                result.push_str(&new_line);
+                result.push('\n');
+                replaced = true;
+                break;
+            }
+        }
+        if !replaced {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+
+    result
 }
