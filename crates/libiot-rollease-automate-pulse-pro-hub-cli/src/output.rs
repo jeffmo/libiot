@@ -85,6 +85,8 @@ pub(crate) struct MotorView<'a> {
     pub firmware_version: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<MotorPositionView>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voltage: Option<MotorVoltageView>,
 }
 
 impl<'a> From<&'a Motor> for MotorView<'a> {
@@ -95,6 +97,7 @@ impl<'a> From<&'a Motor> for MotorView<'a> {
             motor_type: motor_type_str(m.version.motor_type),
             firmware_version: &m.version.version,
             position: m.position.map(MotorPositionView::from),
+            voltage: m.voltage.map(MotorVoltageView::from),
         }
     }
 }
@@ -217,12 +220,23 @@ pub(crate) fn render_hub_info(info: &HubInfo, format: OutputFormat) {
                 .max()
                 .unwrap_or(4)
                 .max(4);
+            let battery_w = 7; // "BATTERY" header width, e.g. "12.08 V"
 
-            println!("{:<addr_w$}  {:<name_w$}  STATE", "ADDR", "NAME",);
-            println!("{:<addr_w$}  {:<name_w$}  -----", "----", "----",);
+            println!(
+                "{:<addr_w$}  {:<name_w$}  {:<battery_w$}  STATE",
+                "ADDR", "NAME", "BATTERY",
+            );
+            println!(
+                "{:<addr_w$}  {:<name_w$}  {:<battery_w$}  -----",
+                "----", "----", "-------",
+            );
 
             for motor in &info.motors {
                 let name = motor.name.as_deref().unwrap_or("?");
+                let battery = match motor.voltage {
+                    Some(v) => format!("{:.2} V", v.volts()),
+                    None => "?".to_owned(),
+                };
                 let state = match motor.position {
                     Some(p) => format!(
                         "closed={}%  tilt={}  signal={} ({})",
@@ -233,7 +247,10 @@ pub(crate) fn render_hub_info(info: &HubInfo, format: OutputFormat) {
                     ),
                     None => "(no position received)".to_owned(),
                 };
-                println!("{:<addr_w$}  {:<name_w$}  {state}", motor.address, name);
+                println!(
+                    "{:<addr_w$}  {:<name_w$}  {:<battery_w$}  {state}",
+                    motor.address, name, battery,
+                );
             }
         },
     }
