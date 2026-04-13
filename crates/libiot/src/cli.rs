@@ -301,9 +301,6 @@ pub(crate) struct UninstallArgs {
     /// Suppress cargo output.
     #[arg(long)]
     pub quiet: bool,
-    /// Remove all aliases pointing to this command.
-    #[arg(long)]
-    pub remove_aliases: bool,
     /// Remove all env vars for this command and its aliases.
     #[arg(long)]
     pub remove_env_vars: bool,

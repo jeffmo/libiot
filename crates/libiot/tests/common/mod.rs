@@ -1,5 +1,7 @@
 //! Shared helpers for end-to-end integration tests.
 
+#![allow(dead_code)]
+
 use std::path::Path;
 
 use assert_cmd::Command;

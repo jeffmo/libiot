@@ -111,12 +111,16 @@ pub(crate) fn run_uninstall(args: &UninstallArgs, ctx: OutputContext) -> CliResu
     }
 
     // -- post-uninstall cleanup ------------------------------------------
-    if args.remove_aliases || args.remove_env_vars {
+    // Aliases pointing to the uninstalled command are always removed
+    // (stale aliases would break delegation). Env vars are only removed
+    // with --remove-env-vars since they're harmless when the CLI is gone
+    // and the user might reinstall later.
+    {
         let mut settings = load_settings()?;
         cleanup_after_uninstall(
             &mut settings,
             short_name,
-            args.remove_aliases,
+            /* remove_aliases = */ true,
             args.remove_env_vars,
         );
         save_settings(&settings)?;

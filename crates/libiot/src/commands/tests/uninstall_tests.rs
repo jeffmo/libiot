@@ -33,7 +33,6 @@ fn default_args(name: &str) -> UninstallArgs {
         name: name.to_owned(),
         color: None,
         quiet: false,
-        remove_aliases: false,
         remove_env_vars: false,
         root: None,
         no_update_completions: true,
@@ -102,7 +101,6 @@ fn build_args_all_flags() {
         name: "test".to_owned(),
         color: Some("never".to_owned()),
         quiet: true,
-        remove_aliases: false,
         remove_env_vars: false,
         root: Some("/usr/local".to_owned()),
         no_update_completions: true,
@@ -159,63 +157,51 @@ fn build_args_quiet_not_duplicated() {
 // cleanup_after_uninstall tests
 // -----------------------------------------------------------------------
 
-/// `--remove-aliases` removes only aliases pointing to the target
-/// command.
+/// Uninstall always removes aliases pointing to the target command,
+/// even without --remove-env-vars.
 ///
 /// Written by Claude Code, reviewed by a human.
 #[test]
-fn cleanup_remove_aliases_only() {
+fn cleanup_always_removes_aliases() {
     let mut settings = sample_settings();
-    cleanup_after_uninstall(&mut settings, "rollease", true, false);
+    cleanup_after_uninstall(
+        &mut settings,
+        "rollease",
+        /* remove_aliases = */ true,
+        /* remove_env_vars = */ false,
+    );
 
-    // "shades" and "blinds" should be gone.
+    // "shades" and "blinds" pointed to "rollease" — gone.
     assert!(!settings.aliases.contains_key("shades"));
     assert!(!settings.aliases.contains_key("blinds"));
 
-    // "lights" should remain.
+    // "lights" points to "hue" — untouched.
     assert_eq!(
         settings.aliases.get("lights").map(String::as_str),
         Some("hue"),
     );
 
-    // Env vars should be untouched.
+    // Env vars should be untouched (--remove-env-vars not set).
     assert!(settings.env_vars.contains_key("rollease"));
     assert!(settings.env_vars.contains_key("shades"));
     assert!(settings.env_vars.contains_key("blinds"));
 }
 
 /// `--remove-env-vars` removes env vars for the command and its
-/// aliases.
+/// aliases, in addition to the always-on alias removal.
 ///
 /// Written by Claude Code, reviewed by a human.
 #[test]
-fn cleanup_remove_env_vars_only() {
+fn cleanup_with_remove_env_vars() {
     let mut settings = sample_settings();
-    cleanup_after_uninstall(&mut settings, "rollease", false, true);
+    cleanup_after_uninstall(
+        &mut settings,
+        "rollease",
+        /* remove_aliases = */ true,
+        /* remove_env_vars = */ true,
+    );
 
-    // Env vars for "rollease", "shades", and "blinds" should be gone.
-    assert!(!settings.env_vars.contains_key("rollease"));
-    assert!(!settings.env_vars.contains_key("shades"));
-    assert!(!settings.env_vars.contains_key("blinds"));
-
-    // Env vars for "hue" should remain.
-    assert!(settings.env_vars.contains_key("hue"));
-
-    // Aliases should be untouched.
-    assert!(settings.aliases.contains_key("shades"));
-    assert!(settings.aliases.contains_key("blinds"));
-    assert!(settings.aliases.contains_key("lights"));
-}
-
-/// Both flags together remove aliases and env vars.
-///
-/// Written by Claude Code, reviewed by a human.
-#[test]
-fn cleanup_both_flags() {
-    let mut settings = sample_settings();
-    cleanup_after_uninstall(&mut settings, "rollease", true, true);
-
-    // Aliases for "rollease" gone.
+    // Aliases for "rollease" gone (always removed).
     assert!(!settings.aliases.contains_key("shades"));
     assert!(!settings.aliases.contains_key("blinds"));
 
@@ -224,12 +210,14 @@ fn cleanup_both_flags() {
     assert!(!settings.env_vars.contains_key("shades"));
     assert!(!settings.env_vars.contains_key("blinds"));
 
-    // Unrelated command untouched.
+    // Env vars for "hue" should remain.
+    assert!(settings.env_vars.contains_key("hue"));
+
+    // Unrelated alias untouched.
     assert_eq!(
         settings.aliases.get("lights").map(String::as_str),
         Some("hue"),
     );
-    assert!(settings.env_vars.contains_key("hue"));
 }
 
 /// Cleanup with no matching aliases is a no-op.
