@@ -27,6 +27,7 @@ pub(crate) const BUILTIN_NAMES: &[&str] = &[
     "set",
     "uninstall",
     "unset",
+    "update",
 ];
 
 /// Check whether a name matches a built-in subcommand.
@@ -142,6 +143,11 @@ pub(crate) enum Command {
         #[command(subcommand)]
         target: UnsetTarget,
     },
+    /// Update libiot or an installed CLI to the latest version.
+    ///
+    /// With no arguments, updates libiot itself. With a CLI name,
+    /// updates that specific CLI.
+    Update(UpdateArgs),
 }
 
 // ---------------------------------------------------------------------------
@@ -308,6 +314,48 @@ pub(crate) struct UninstallArgs {
     #[arg(long)]
     pub root: Option<String>,
     /// Skip regenerating shell completion files after uninstall.
+    #[arg(long)]
+    pub no_update_completions: bool,
+}
+
+// ---------------------------------------------------------------------------
+// UpdateArgs
+// ---------------------------------------------------------------------------
+
+/// Arguments for the `update` subcommand.
+#[derive(clap::Args, Debug)]
+#[allow(clippy::struct_excessive_bools)]
+pub(crate) struct UpdateArgs {
+    /// CLI to update. Omit to update libiot itself.
+    pub name: Option<String>,
+    /// Comma-separated list of features to activate.
+    #[arg(long)]
+    pub features: Option<String>,
+    /// Enable all available features.
+    #[arg(long)]
+    pub all_features: bool,
+    /// Directory for all generated artifacts.
+    #[arg(long)]
+    pub target_dir: Option<String>,
+    /// Perform all checks without actually installing.
+    #[arg(long, short = 'n')]
+    pub dry_run: bool,
+    /// Build in debug mode (without optimizations).
+    #[arg(long)]
+    pub debug: bool,
+    /// Control when colored output is used.
+    #[arg(long)]
+    pub color: Option<String>,
+    /// Number of parallel jobs for cargo.
+    #[arg(long, short)]
+    pub jobs: Option<u32>,
+    /// Suppress cargo output.
+    #[arg(long)]
+    pub quiet: bool,
+    /// Directory to install packages into.
+    #[arg(long)]
+    pub root: Option<String>,
+    /// Skip regenerating shell completion files after update.
     #[arg(long)]
     pub no_update_completions: bool,
 }

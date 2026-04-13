@@ -7,7 +7,7 @@ use crate::error::CliError;
 
 /// The total number of `CliError` variants. Keep in sync when adding
 /// new variants.
-const VARIANT_COUNT: usize = 19;
+const VARIANT_COUNT: usize = 20;
 
 /// Helper: construct one instance of every `CliError` variant using
 /// dummy values.
@@ -52,6 +52,9 @@ fn all_variants() -> Vec<CliError> {
         CliError::ExecFailed {
             name: String::new(),
             source: std::io::Error::other("test"),
+        },
+        CliError::NotCargoInstalled {
+            name: String::new(),
         },
         CliError::NoHomeDir,
         CliError::PostInstallAliasFailed {

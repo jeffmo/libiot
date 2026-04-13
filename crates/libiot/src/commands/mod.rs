@@ -12,6 +12,7 @@ mod list;
 mod set;
 mod uninstall;
 mod unset;
+mod update;
 
 #[cfg(test)]
 mod tests;
@@ -39,6 +40,7 @@ pub(crate) fn run(cli: Cli) -> CliResult<()> {
             shell,
             print_config,
         } => completions::run_completions(shell, print_config, ctx),
+        Command::Update(ref args) => update::run_update(args, ctx),
         Command::ConfigPath => {
             let path = crate::settings::settings_path()?;
             crate::output::render_config_path(&path, ctx);
