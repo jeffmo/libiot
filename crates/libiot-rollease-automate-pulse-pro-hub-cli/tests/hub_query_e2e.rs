@@ -1,4 +1,4 @@
-//! End-to-end integration test: `hub info` against a loopback fake hub
+//! End-to-end integration test: `info` against a loopback fake hub
 //! replaying the real captured bytes from `PULSE_PRO_LOCAL_API.md` §6.
 
 mod common;
@@ -6,9 +6,9 @@ mod common;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 
-/// Verifies that `hub info` sends the expected batch query and renders
-/// the hub name from a real hub's captured response. Uses `assert_cmd`
-/// to exec the actual compiled binary (not a library call), so this
+/// Verifies that `info` sends the expected batch query and renders the
+/// hub name from a real hub's captured response. Uses `assert_cmd` to
+/// exec the actual compiled binary (not a library call), so this
 /// exercises the full clap-parse → tokio-runtime → connect → query →
 /// render → exit pipeline end-to-end.
 ///
@@ -47,7 +47,17 @@ async fn hub_info_renders_hub_name_from_real_captured_response() {
                 .unwrap();
             socket.flush().await.unwrap();
 
-            // Keep socket open so the client can finish reading batch 2.
+            // Batch 3: per-motor voltage queries.
+            let mut buf3 = [0u8; 256];
+            let _ = socket.read(&mut buf3).await.unwrap();
+
+            socket
+                .write_all(b"!4JKpVc01208,R58;!MWXpVc00985,R4C;!3YCpVc01150,R4C;")
+                .await
+                .unwrap();
+            socket.flush().await.unwrap();
+
+            // Keep socket open so the client can finish reading batch 3.
             tokio::time::sleep(std::time::Duration::from_secs(4)).await;
         })
         .await;
@@ -58,7 +68,7 @@ async fn hub_info_renders_hub_name_from_real_captured_response() {
     let output = tokio::task::spawn_blocking(move || {
         assert_cmd::Command::cargo_bin("libiot-rollease-automate-pulse-pro-hub")
             .unwrap()
-            .args(["--hub", &addr_for_cmd, "hub", "info"])
+            .args(["--hub", &addr_for_cmd, "info"])
             .output()
             .expect("failed to exec CLI binary")
     })
@@ -85,7 +95,7 @@ async fn hub_info_renders_hub_name_from_real_captured_response() {
     let _ = fake_hub.await;
 }
 
-/// Verifies that `--format json hub info` produces valid JSON with the
+/// Verifies that `--format json info` produces valid JSON with the
 /// expected top-level fields.
 ///
 /// Written by Claude Code, reviewed by a human.
@@ -116,6 +126,13 @@ async fn hub_info_json_output_has_expected_fields() {
             socket.write_all(b"!4JKNAMEJohn House;").await.unwrap();
             socket.flush().await.unwrap();
 
+            // Batch 3: voltage queries.
+            let mut buf3 = [0u8; 256];
+            let _ = socket.read(&mut buf3).await;
+
+            socket.write_all(b"!4JKpVc01208,R58;").await.unwrap();
+            socket.flush().await.unwrap();
+
             tokio::time::sleep(std::time::Duration::from_secs(4)).await;
         })
         .await;
@@ -125,7 +142,7 @@ async fn hub_info_json_output_has_expected_fields() {
     let output = tokio::task::spawn_blocking(move || {
         assert_cmd::Command::cargo_bin("libiot-rollease-automate-pulse-pro-hub")
             .unwrap()
-            .args(["--hub", &addr_for_cmd, "--format", "json", "hub", "info"])
+            .args(["--hub", &addr_for_cmd, "--format", "json", "info"])
             .output()
             .expect("failed to exec CLI binary")
     })

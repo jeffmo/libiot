@@ -108,8 +108,16 @@ pub(crate) enum Command {
     /// Stop every paired motor.
     StopAll,
 
+    // -- hub info (flat, high-use) --------------------------------------
+    /// Full hub info: name, serial, and every paired motor with
+    /// position, friendly name, and battery voltage.
+    ///
+    /// Each motor's signal quality label is an empirical estimate —
+    /// see `motor <MOTOR> position --help` for threshold details.
+    Info,
+
     // -- hub queries (nested under `hub`) -----------------------------
-    /// Query hub-level information.
+    /// Query individual hub-level attributes.
     Hub {
         /// Which hub query to run.
         #[command(subcommand)]
@@ -160,21 +168,6 @@ pub(crate) enum Command {
 /// Hub-level query subcommands.
 #[derive(Subcommand, Debug)]
 pub(crate) enum HubQuery {
-    /// Full hub info: name, serial, and every paired motor with
-    /// position and friendly name.
-    ///
-    /// Each motor's signal quality label is an empirical estimate —
-    /// see `motor <MOTOR> position --help` for threshold details.
-    #[command(long_about = "\
-Full hub info: name, serial, and every paired motor with position and \
-friendly name.
-
-Each motor's output includes a signal-strength value from the hub's \
-433 MHz radio link. The qualitative label (great/ok/weak/poor) is based \
-on empirical thresholds from real hardware — Rollease does not document \
-the exact units. See `motor <MOTOR> position --help` for the threshold \
-table.")]
-    Info,
     /// Hub friendly name only.
     Name,
     /// Hub serial number only.

@@ -59,9 +59,11 @@ pub(crate) async fn run(cli: Cli) -> CliResult<()> {
         Command::CloseAll => broadcast::run_close_all(&hub, fmt).await,
         Command::StopAll => broadcast::run_stop_all(&hub, fmt).await,
 
+        // Hub info (top-level).
+        Command::Info => hub::run_info(&hub, fmt).await,
+
         // Hub queries.
         Command::Hub { query } => match query {
-            HubQuery::Info => hub::run_info(&hub, fmt).await,
             HubQuery::Name => hub::run_name(&hub, fmt).await,
             HubQuery::Serial => hub::run_serial(&hub, fmt).await,
         },

@@ -18,15 +18,15 @@ cargo install libiot
 libiot install rollease-automate-pulse-pro-hub
 
 # Use it via the full name
-libiot rollease-automate-pulse-pro-hub hub info
+libiot rollease-automate-pulse-pro-hub info
 
 # Or create a short alias
 libiot set alias rollease-automate-pulse-pro-hub shades
-libiot shades hub info
+libiot shades info
 
 # Set a persistent env var so you don't have to pass --hub every time
 libiot set env-var shades PULSE_PRO_HUB 192.168.1.2
-libiot shades hub info   # LIBIOT_PULSE_PRO_HUB is injected automatically
+libiot shades info   # LIBIOT_PULSE_PRO_HUB is injected automatically
 ```
 
 ## Two operating modes
@@ -53,8 +53,8 @@ libiot shades hub info   # LIBIOT_PULSE_PRO_HUB is injected automatically
 `libiot-*` binary:
 
 ```bash
-libiot rollease-automate-pulse-pro-hub hub info
-# equivalent to: libiot-rollease-automate-pulse-pro-hub hub info
+libiot rollease-automate-pulse-pro-hub info
+# equivalent to: libiot-rollease-automate-pulse-pro-hub info
 ```
 
 Top-level flags (`--format`, `--quiet`) are only available for built-in
