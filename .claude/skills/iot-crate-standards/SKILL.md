@@ -257,3 +257,30 @@ fixing a bug, or identifying follow-up work, update the appropriate
 tracker. Project trackers are deliberately terse — sacrifice grammar
 for concision — and end with an "Unresolved Questions" section when
 relevant.
+
+## 16. CLI crate one-liner title
+
+Every `-cli` crate must have a single-sentence title as its clap
+`about` string. This title:
+
+- Is the **first line** of `<binary> --help` output.
+- Must be a complete, standalone sentence (no trailing period).
+- Must describe what the CLI controls, not implementation details.
+- Is extracted at completion-generation time by `libiot completions`
+  and shown as the tab-completion description for that CLI.
+
+Example (in `cli.rs`):
+
+```rust
+#[command(
+    about = "Control a Rollease Acmeda Automate Pulse Pro shade hub from the command line"
+)]
+```
+
+Longer description text goes in `long_about` or the doc comment, not
+in `about`. The one-liner must stand alone — it's the only thing
+users see in tab-completion menus.
+
+Code review (`/review-rust-api`) explicitly checks: does the `-cli`
+crate have a concise `about` string that would read well as a
+one-line completion description?

@@ -355,9 +355,9 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
     let discovered_names: std::collections::BTreeSet<String> =
         discovered.iter().map(|c| c.name.clone()).collect();
 
-    let alias_names: std::collections::BTreeSet<String> = load_settings()
-        .map(|s| s.aliases.keys().cloned().collect())
-        .unwrap_or_default();
+    let alias_map: std::collections::BTreeMap<String, String> =
+        load_settings().map(|s| s.aliases).unwrap_or_default();
+    let alias_names: std::collections::BTreeSet<String> = alias_map.keys().cloned().collect();
 
     // All known names: CLIs + aliases.
     let all_names: Vec<&str> = discovered_names
@@ -367,14 +367,31 @@ pub(crate) fn generate_completions(shell: clap_complete::Shell) -> String {
         .collect();
 
     // -- inject discovered CLIs and aliases as hidden top-level subcommands --
-    for name in &discovered_names {
-        let leaked: &'static str = Box::leak(name.clone().into_boxed_str());
-        cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
+    //
+    // Each gets an `.about()` description so that zsh shows them on
+    // separate lines with per-command descriptions.
+    // CLI descriptions come from the binary's `--help` first line.
+    // Alias descriptions say "Alias for <target>".
+    for cli in &discovered {
+        let leaked: &'static str = Box::leak(cli.name.clone().into_boxed_str());
+        let about = leak_str(&cli_help_title(&cli.path));
+        cmd = cmd.subcommand(
+            clap::Command::new(leaked)
+                .about(about)
+                .hide(true)
+                .trailing_var_arg(true),
+        );
     }
-    for alias_name in &alias_names {
+    for (alias_name, target) in &alias_map {
         if !discovered_names.contains(alias_name) {
             let leaked: &'static str = Box::leak(alias_name.clone().into_boxed_str());
-            cmd = cmd.subcommand(clap::Command::new(leaked).hide(true).trailing_var_arg(true));
+            let about = leak_str(&format!("Alias for {target}"));
+            cmd = cmd.subcommand(
+                clap::Command::new(leaked)
+                    .about(about)
+                    .hide(true)
+                    .trailing_var_arg(true),
+            );
         }
     }
 
@@ -470,6 +487,31 @@ fn set_possible_values(
             values.iter().cloned(),
         ))
     });
+}
+
+/// Extract the one-liner title from a CLI binary's `--help` output.
+///
+/// Runs `<binary> --help`, captures stdout, and returns the first
+/// non-empty line (the clap "about" string). Returns a fallback
+/// string if the binary can't be run or produces no output.
+fn cli_help_title(binary_path: &std::path::Path) -> String {
+    let output = std::process::Command::new(binary_path)
+        .arg("--help")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output();
+
+    match output {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            stdout
+                .lines()
+                .find(|l| !l.is_empty())
+                .unwrap_or("libiot CLI")
+                .to_owned()
+        },
+        Err(_) => "libiot CLI".to_owned(),
+    }
 }
 
 /// Leak a string to get a `&'static str`.
